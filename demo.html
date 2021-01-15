@@ -1,0 +1,109 @@
+<html>
+  <head>
+    <script src="./magnet.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+      }
+      #x, #y {
+        --size: 1px;
+
+        position: fixed;
+        top: calc(-1 * var(--size));
+        left: calc(-1 * var(--size));
+        background-color: #000;
+        opacity: .25;
+        pointer-events: none;
+        z-index: 1;
+      }
+      #x {
+        transform: translateY(-50%);
+        height: var(--size);
+        right: 0;
+      }
+      #y {
+        transform: translateX(-50%);
+        width: var(--size);
+        bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <magnet-block
+      style="width:100px; height:150px; background:#fcc; display:inline-block; z-index: 1;"
+      group="a"
+      attractDistance="15"
+    >
+      Hi
+    </magnet-block>
+    <magnet-block
+      style="width:150px; height:100px; background:#cfc; display:inline-block;"
+      group="a"
+      attractDistance="15"
+      alignTo="outer|inner"
+    >
+      Yo
+    </magnet-block>
+
+    <div id="x"></div>
+    <div id="y"></div>
+  </body>
+  <script>
+    (function() {
+      const domX = document.getElementById('x');
+      const domY = document.getElementById('y');
+
+      Array
+        .from(document.querySelectorAll('magnet-block'))
+        .forEach(function(dom) {
+          dom.addEventListener('attract', function(event) {
+            const {
+              detail: {
+                x: {
+                  alignment: xAlignment,
+                },
+                y: {
+                  alignment: yAlignment,
+                },
+                raw: {
+                  target: {
+                    rectangle: rectTarget,
+                  },
+                },
+              },
+            } = event;
+
+            let posX, posY;
+
+            switch (xAlignment) {
+              case Magnet.ALIGNMENT.rightToRight:
+              case Magnet.ALIGNMENT.leftToRight:
+                posX = rectTarget.right;
+                break;
+
+              case Magnet.ALIGNMENT.rightToLeft:
+              case Magnet.ALIGNMENT.leftToLeft:
+                posX = rectTarget.left;
+                break;
+            }
+            switch (yAlignment) {
+              case Magnet.ALIGNMENT.topToTop:
+              case Magnet.ALIGNMENT.bottomToTop:
+                posY = rectTarget.top;
+                break;
+
+              case Magnet.ALIGNMENT.topToBottom:
+              case Magnet.ALIGNMENT.bottomToBottom:
+                posY = rectTarget.bottom;
+                break;
+            }
+            // console.log(event.detail)
+            domX.style.top = posY ?`${posY}px` :'';
+            domY.style.left = posX ?`${posX}px` :'';
+            
+            // event.preventDefault(); // not to attract
+          });
+        });
+    })();
+  </script>
+</html>
