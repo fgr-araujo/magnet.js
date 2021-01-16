@@ -6,8 +6,7 @@ import {
   getStyle,
 } from './stdlib';
 
-const printLog = ()=>{};
-// const printLog = console.log;
+const isRealNum = (n) => isset(n) && isnum(n);
 
 /**
  * Check if source is rectangle object
@@ -29,7 +28,6 @@ export function isRect(
 
       return true;
     };
-    // const printLog = ()=>{};
 
     if (!isset(source)) {
       throw new Error(`Not assign source`);
@@ -47,7 +45,6 @@ export function isRect(
       height,
     } = source;
     const isInBias = (a, b) => Math.abs(a - b) <= bias;
-    const isRealNum = (n) => isset(n) && isnum(n);
 
     let finalTop;
     let finalRight;
@@ -268,58 +265,196 @@ export function stdRect(source) {
 }
 
 class Rect {
-  x = 0
-  y = 0
-  top = 0
-  right = 0
-  bottom = 0
-  left = 0
-  width = 0
-  height = 0
+  __top = 0
+  __right = 0
+  __bottom = 0
+  __left = 0
+  __width = 0
+  __height = 0
 
   constructor(source) {
-    printLog(660, source);
-
     const rect = isRect(source, {
       afterFunc: (rect) => {
-        printLog(661, rect);
         return rect;
       },
     });
-    printLog(662, rect, source);
 
     if (rect) {
-      this.x = rect.x;
-      this.y = rect.y;
-      this.top = rect.top;
-      this.right = rect.right;
-      this.bottom = rect.bottom;
-      this.left = rect.left;
-      this.width = rect.width;
-      this.height = rect.height;
+      this.__top = rect.top;
+      this.__right = rect.right;
+      this.__bottom = rect.bottom;
+      this.__left = rect.left;
+      this.__width = rect.width;
+      this.__height = rect.height;
     }
   }
 
-  offset(x = 0, y = 0) {
-    printLog('OFFSET-st', [this.x,this.y], [x,y]);
+  /**
+   * X
+   */
+  get x() { return this.left; }
+  // set x(x) { return this.left = x; }
+  
+  /**
+   * Y
+   */
+  get y() { return this.top; }
+  // set y(y) { return this.top = y; }
 
-    if (x) {
-      this.left = this.x = this.left + x;
-      this.right += x;
-    }
-    if (y) {
-      this.top = this.y = this.top + y;
-      this.bottom += y;
+  /**
+   * Top
+   */
+  get top() { return this.__top; }
+  // set top(top) {
+  //   const bottom = this.bottom;
+    
+  //   if (!isRealNum(top)) {
+  //     throw new Error(`Invalid top: ${top}`);
+  //   } else if (top > bottom) {
+  //     throw new Error(`Illegal top(${top}) > bottom(${bottom})`);
+  //   }
+
+  //   this.__top = top;
+  //   this.__height = bottom - top;
+  // }
+
+  /**
+   * Right
+   */
+  get right() { return this.__right; }
+  // set right(right) {
+  //   const left = this.left;
+
+  //   if (!isRealNum(right)) {
+  //     throw new Error(`Invalid right: ${right}`);
+  //   } else if (right < left) {
+  //     throw new Error(`Illegal right(${right}) < left(${left})`);
+  //   }
+
+  //   this.__right = right;
+  //   this.__width = right - left;
+  // }
+
+  /**
+   * Bottom
+   */
+  get bottom() { return this.__bottom; }
+  // set bottom(bottom) {
+  //   const top = this.top;
+
+  //   if (!isRealNum(bottom)) {
+  //     throw new Error(`Invalid bottom: ${bottom}`);
+  //   } else if (bottom < top) {
+  //     throw new Error(`Illegal bottom(${bottom}) < top(${top})`);
+  //   }
+
+  //   this.__bottom = bottom;
+  //   this.__height = bottom - top;
+  // }
+
+  /**
+   * Left
+   */
+  get left() { return this.__left; }
+  // set left(left) {
+  //   const right = this.right;
+
+  //   if (!isRealNum(left)) {
+  //     throw new Error(`Invalid left: ${left}`);
+  //   } else if (left > right) {
+  //     throw new Error(`Illegal left(${left}) > right(${right})`);
+  //   }
+
+  //   this.__left = left;
+  //   this.__width = right - left;
+  // }
+
+  /**
+   * Width
+   */
+  get width() { return this.__width; }
+  // set width(width) {
+  //   if (!isRealNum(width)) {
+  //     throw new Error(`Invalid width: ${width}`);
+  //   } else if (width < 0) {
+  //     throw new Error(`Illegal width(${width}) < 0`);
+  //   }
+
+  //   this.__width = width;
+  //   this.__right = this.left + width;
+  // }
+
+  /**
+   * Height
+   */
+  get height() { return this.__height; }
+  // set height(height) {
+  //   if (!isRealNum(height)) {
+  //     throw new Error(`Invalid height: ${height}`);
+  //   } else if (height < 0) {
+  //     throw new Error(`Illegal height(${height}) < 0`);
+  //   }
+
+  //   this.__height = height;
+  //   this.__bottom = this.top + height;
+  // }
+
+  /**
+   * Offset
+   */
+  offsetX(x = 0) {
+    if (!isRealNum(x)) {
+      throw new Error(`Invalid x: ${x}`);
+    } else if (x) {
+      this.__left += x;
+      this.__right += x;
     }
 
-    printLog('OFFSET-ed', [this.x,this.y]);
+    return this;
+  }
+  offsetY(y = 0) {
+    if (!isRealNum(y)) {
+      throw new Error(`Invalid y: ${y}`);
+    } else if (y) {
+      this.__top += y;
+      this.__bottom += y;
+    }
+    
+    return this;
+  }
+  offset(x, y) {
+    this.offsetX(x);
+    this.offsetY(y);
+
     return this;
   }
 
-  moveTo(x = this.left, y = this.top) {
-    printLog('MOVE', [this.x,this.y], [x,y]);
+  /**
+   * Move to
+   */
+  moveX(x = this.left) {
+    if (!isRealNum(x)) {
+      throw new Error(`Invalid x: ${x}`);
+    }
+    
+    this.offsetX(x - this.left);
 
-    return this.offset(x - this.left, y - this.top);
+    return this;
+  }
+  moveY(y = this.top) {
+    if (!isRealNum(y)) {
+      throw new Error(`Invalid y: ${y}`);
+    }
+
+    this.offsetY(y - this.top);
+
+    return this;
+  }
+  moveTo(x, y) {
+    this.moveX(x);
+    this.moveY(y);
+
+    return this;
   }
 }
 

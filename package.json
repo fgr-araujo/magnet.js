@@ -10,7 +10,7 @@
     "jquery-build": "browserify jquery-plugin.js -t [ babelify --presets [ es2015 stage-0 ] ] | uglifyjs -cm > jquery-magnet.min.js",
     "all-build-debug": "npm run build-debug & npm run jquery-build-debug",
     "all-build": "npm run build & npm run jquery-build",
-    "webpack:dev": "webpack serve --mode development --progress"
+    "dev": "webpack serve --mode development --progress"
   },
   "author": "Wan Wan",
   "repository": {
