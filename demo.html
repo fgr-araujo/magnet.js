@@ -6,7 +6,11 @@
         margin: 0;
       }
       #canvas {
-        position: relative;
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
         z-index: 1;
       }
       #x, #y {
@@ -46,7 +50,8 @@
         style="width:150px; height:100px; background:#cfc; display:inline-block;"
         group="a"
         attractDistance="15"
-        alignTo="center"
+        alignTo="outer"
+        x-crossPrevent="parent|target"
       >
         Yo
       </magnet-block>

@@ -40,79 +40,6 @@ const EVENT = {
   dragEnd: ['mouseup', 'touchend'],
 };
 
-
-function addEventListener(dom, names, func) {
-  (isarray(names) ?names :[names]).forEach((name) => {
-    dom.addEventListener(name, func);
-  });
-}
-function removeEventListener(dom, names, func) {
-  (isarray(names) ?names :[names]).forEach((name) => {
-    dom.removeEventListener(name, func);
-  });
-}
-function triggerMagnetEvent(target, eventName, options) {
-  return target instanceof Magnet
-    ?target.triggerCustomEvent(eventName, options)
-    :false;
-}
-
-
-// const toPx = (p) => `${p}px`;
-// const toPreg = (p) => `${100*p}%`;
-// const getEventXY = ({ clientX, clientY, touches: [{ clientX: x = clientX, clientY: y = clientY } = {}] = []}) => ({ x, y });
-// const bindEventNames = (this, ...names) => {
-//   const { [MAGNET_PROPS.id]: id } = this;
-//   return names.reduce((arr, name) => (isarray(name)
-//     ?arr.concat(bindEventNames(this, ...name))
-//     :arr.concat(name.split(' ').map((name) => `${name}.${id}`))
-//   ), []);
-// };
-// const getParent = (d) => {
-//   for (let r=d.parentElement; r; r=r.parentElement) {
-//     if ('static' !== getStyle(r).position) {
-//       return r;
-//     }
-//   }
-//   return document;
-// };
-
-
-// // ===================================================================
-// //  Magnet start
-
-// const MAGNET_PROPS = {
-//   id: '_id',
-//   temp: '_temp',
-//   targets: '_targets',
-//   eventHandler: '_eventHandler',
-//   manualHandler: '_manualHandler',
-//   distance: '_distance',
-//   attractable: '_attractable',
-//   allowCtrlKey: '_allowCtrlKey',
-//   allowDrag: '_allowDrag',
-//   useRelativeUnit: '_useRelativeUnit',
-//   stayInParent: '_stayInParent',
-//   alignOuter: '_alignOuter',
-//   alignInner: '_alignInner',
-//   alignCenter: '_alignCenter',
-//   alignParentCenter: '_alignParentCenter',
-// };
-
-// export const MAGNET_DEFAULTS = {
-//   distance: 0,
-//   attractable: true,
-//   allowCtrlKey: true,
-//   allowDrag: true,
-//   useRelativeUnit: false,
-//   stayInParent: false,
-//   alignOuter: true,
-//   alignInner: true,
-//   alignCenter: true,
-//   alignParentCenter: false,
-// };
-
-
 const PROP_MAGNET_ROOT = '__magnet';
 const PROP_ORIGIN_STYLES = 'originStyles';
 const PROP_LAST_ATTRACT = 'lastNearest';
@@ -129,6 +56,23 @@ const ATTRIBUTE_PROPS = {
   unattractable: 'unattract',
   attractDistance: 'attractDistance',
 };
+
+
+function addEventListener(dom, names, func) {
+  (isarray(names) ?names :[names]).forEach((name) => {
+    dom.addEventListener(name, func);
+  });
+}
+function removeEventListener(dom, names, func) {
+  (isarray(names) ?names :[names]).forEach((name) => {
+    dom.removeEventListener(name, func);
+  });
+}
+function triggerMagnetEvent(target, eventName, options) {
+  return target instanceof Magnet
+    ?target.triggerCustomEvent(eventName, options)
+    :false;
+}
 
 
 /**
@@ -169,6 +113,7 @@ class Magnet extends HTMLElement {
       const lastOffsetX = tonum(this.style.getPropertyValue(STYLE_PROPS.x) || 0);
       const lastOffsetY = tonum(this.style.getPropertyValue(STYLE_PROPS.y) || 0);
       const alignTo = this.alignTo;
+      const alignToOuterline = alignTo.includes(Magnet.ALIGN_TO.outerline);
       const crossPrevent = this.crossPrevent;
       const attractDistance = this.attractDistance;
       const alignments = [];
@@ -190,6 +135,18 @@ class Magnet extends HTMLElement {
         alignments.push(Magnet.ALIGNMENT.yCenterToYCenter);
       }
 
+      const isInAlignRange = (selfA, selfB, targetA, targetB) => {
+        const targetRangeA = targetA - attractDistance;
+        const targetRangeB = targetB + attractDistance;
+
+        if (selfA >= targetRangeA && selfA <= targetRangeB) {
+          return true;
+        } else if (selfB >= targetRangeA && selfB <= targetRangeB) {
+          return true;
+        }
+
+        return false;
+      };
       const pack = {
         lastAttract,
         source: {
@@ -211,7 +168,7 @@ class Magnet extends HTMLElement {
         unattractable: this.unattractable,
         attractDistance,
         alignTo,
-        alignOuterline: alignTo.includes(Magnet.ALIGN_TO.outerline),
+        alignToOuterline,
         alignments,
         crossPrevent,
         crossPreventParent: crossPrevent.includes(Magnet.PREVENT_CROSS.parent),
@@ -221,8 +178,61 @@ class Magnet extends HTMLElement {
           alignments,
           absDistance: true,
           sort: true,
-          onJudgeDistance: ({ value }) => {
-            return value <= attractDistance;
+          onJudgeDistance: ({ value }, alignment, pack) => {
+            if (value > attractDistance) {
+              return false;
+            } else if (!alignToOuterline) {
+              const {
+                source: sourceRect,
+                target: {
+                  rectangle: targetRect,
+                },
+              } = pack;
+
+              switch (alignment) {
+                case PROP_ALIGN_RIGHT_TO_RIGHT:
+                case PROP_ALIGN_LEFT_TO_LEFT:
+                case PROP_ALIGN_RIGHT_TO_LEFT:
+                case PROP_ALIGN_LEFT_TO_RIGHT:
+                  {
+                    const {
+                      top: sourceTop,
+                      bottom: sourceBottom,
+                    } = sourceRect;
+                    const {
+                      top: targetTop,
+                      bottom: targetBottom,
+                    } = targetRect;
+
+                    return (
+                      isInAlignRange(sourceTop, sourceBottom, targetTop, targetBottom)
+                      || isInAlignRange(targetTop, targetBottom, sourceTop, sourceBottom)
+                    );
+                  }
+
+                case PROP_ALIGN_TOP_TO_TOP:
+                case PROP_ALIGN_BOTTOM_TO_BOTTOM:
+                case PROP_ALIGN_TOP_TO_BOTTOM:
+                case PROP_ALIGN_BOTTOM_TO_TOP:
+                  {
+                    const {
+                      right: sourceRight,
+                      left: sourceLeft,
+                    } = sourceRect;
+                    const {
+                      right: targetRight,
+                      left: targetLeft,
+                    } = targetRect;
+
+                    return (
+                      isInAlignRange(sourceLeft, sourceRight, targetLeft, targetRight)
+                      || isInAlignRange(targetLeft, targetRight, sourceLeft, sourceRight)
+                    );
+                  }
+              }
+            }
+            
+            return true;
           },
           onJudgeResult: ({ minDistance }) => {
             return isset(minDistance); 
@@ -297,6 +307,10 @@ class Magnet extends HTMLElement {
       rectangle: rectTarget,
       raw: target.raw || target,
     };
+    const pack = {
+      source,
+      target,
+    };
     const stdNum = absDistance
       ?Math.abs
       :(n) => n;
@@ -340,7 +354,7 @@ class Magnet extends HTMLElement {
         value: stdNum(raw),
       };
 
-      if (onJudgeDistance(result)) {
+      if (onJudgeDistance(result, alignment, pack)) {
         distances[alignment] = result;
       }
       
@@ -529,7 +543,7 @@ class Magnet extends HTMLElement {
    */
   static PREVENT_CROSS = Object.defineProperties({}, objMap({
     parent: 'parent',
-    target: 'target',
+    // target: 'target', // yet to support
   }, (value) => ({
     value,
     enumerable: true,
@@ -672,7 +686,7 @@ class Magnet extends HTMLElement {
       unattractable,
       attractDistance,
       alignTo,
-      alignOuterline,
+      alignToOuterline,
       alignments,
       crossPrevent,
       crossPreventParent,
@@ -698,27 +712,28 @@ class Magnet extends HTMLElement {
     if (crossPreventParent) {
       // prevent from going out of parent edges
 
-      if (originX < parentRectangle.left) {
+      if (currentRect.x < parentRectangle.left) {
         currentRect.moveX(parentRectangle.left);
-      } else if (originX + width > parentRectangle.right) {
+      } else if (currentRect.x + width > parentRectangle.right) {
         currentRect.moveX(parentRectangle.right - width);
       }
-      if (originY < parentRectangle.top) {
+      if (currentRect.y < parentRectangle.top) {
         currentRect.moveY(parentRectangle.top);
-      } else if (originY + height > parentRectangle.bottom) {
+      } else if (currentRect.y + height > parentRectangle.bottom) {
         currentRect.moveY(parentRectangle.bottom - height);
       }
     }
 
     const finalRect = new Rect(currentRect);
     
+    handleAttract:
     do {
       if (unattractable) {
         break;
       }
         
       // check current attracted targets
-      const nears = Magnet.getDistanceOfTargets(finalRect, targets, optionsForGettingDistances);
+      const nears = Magnet.getDistanceOfTargets(currentRect, targets, optionsForGettingDistances);
       
       const nearest = nears[0];
       const lastTarget = lastAttract && lastAttract.nearest.target;
@@ -801,43 +816,9 @@ class Magnet extends HTMLElement {
       switch (minXAlignment) {
         case PROP_ALIGN_RIGHT_TO_RIGHT:
         case PROP_ALIGN_LEFT_TO_LEFT:
-          if (false && !alignOuterline) {
-            const {
-              top: selfTop,
-              bottom: selfBottom,
-            } = finalRect;
-            const {
-              top: targetTop,
-              bottom: targetBottom,
-            } = targetRect;
-
-            if (
-              selfTop < targetTop ||
-              targetBottom < selfTop ||
-              selfBottom < targetTop ||
-              targetBottom < selfBottom
-            ) {
-              break;
-            }
-          }
-
-          finalRect.offsetX(minXDistance.raw);
-          break;
-
         case PROP_ALIGN_RIGHT_TO_LEFT:
         case PROP_ALIGN_LEFT_TO_RIGHT:
-          if (true || alignOuterline) {
-            finalRect.offsetX(minXDistance.raw);
-          } else {
-            const diffTopToBottom = distances[PROP_ALIGN_TOP_TO_BOTTOM];
-            const diffBottomToTop = distances[PROP_ALIGN_BOTTOM_TO_TOP];
-
-            if (diffTopToBottom.value <= attractDistance) {
-              finalRect.offsetY(diffTopToBottom.raw);
-            } else if (diffBottomToTop.value <= attractDistance) {
-              finalRect.offsetY(diffBottomToTop.raw);
-            }
-          }
+          finalRect.offsetX(minXDistance.raw);
           break;
 
         case PROP_ALIGN_X_CENTER_TO_X_CENTER:
@@ -849,43 +830,9 @@ class Magnet extends HTMLElement {
       switch (minYAlignment) {
         case PROP_ALIGN_TOP_TO_TOP:
         case PROP_ALIGN_BOTTOM_TO_BOTTOM:
-          if (false && !alignOuterline) {
-            const {
-              right: selfRight,
-              left: selfLeft,
-            } = finalRect;
-            const {
-              right: targetRight,
-              left: targetLeft,
-            } = targetRect;
-
-            if (
-              selfLeft < targetLeft ||
-              targetRight < selfLeft ||
-              selfRight < targetLeft ||
-              targetRight < selfRight
-            ) {
-              break;
-            }
-          }
-
-          finalRect.offsetY(minYDistance.raw);
-          break;
-
         case PROP_ALIGN_TOP_TO_BOTTOM:
         case PROP_ALIGN_BOTTOM_TO_TOP:
-          if (true || alignOuterline) {
-            finalRect.offsetY(minYDistance.raw);
-          } else {
-            const diffRightToLeft = distances[PROP_ALIGN_RIGHT_TO_LEFT];
-            const diffLeftToRight = distances[PROP_ALIGN_LEFT_TO_RIGHT];
-            
-            if (diffRightToLeft.value <= attractDistance) {
-              finalRect.offsetX(diffRightToLeft.raw);
-            } else if (diffLeftToRight.value <= attractDistance) {
-              finalRect.offsetX(diffLeftToRight.raw);
-            }
-          }
+          finalRect.offsetY(minYDistance.raw);
           break;
 
         case PROP_ALIGN_Y_CENTER_TO_Y_CENTER:
