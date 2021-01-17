@@ -1,6 +1,5 @@
 'use strict';
 
-
 export const isset = (o) => 'undefined' !== typeof o;
 export const useor = (a, b, f = isset) => f(a) ?a :b;
 export const isbool = (b) => 'boolean' === typeof b;
@@ -21,11 +20,3 @@ export const objMap = (o, f = ()=>{}, t = this) => objReduce(o, (s, v, k) => ({ 
 export const objValues = (o) => objReduce(o, (a, v) => a.concat(v), []);
 export const iselem = (e) => e instanceof Element || e instanceof Window || e instanceof Document;
 export const getStyle = (d) => d.currentStyle || window.getComputedStyle(d) || d.style;
-export const stdDoms = (...doms) => doms.reduce((arr, dom) => {
-  if (iselem(dom)) {
-    return arr.includes(dom) ?arr :arr.concat(dom);
-  } else if (arrayable(dom)) {
-    return arr.concat(stdDoms(...toarray(dom)));
-  }
-  throw new Error(`Invalid element: ${tostr(dom)}`);
-}, []);
