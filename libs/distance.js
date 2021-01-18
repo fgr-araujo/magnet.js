@@ -1,7 +1,7 @@
 'use strict';
 
 import {
-  RectPack,
+  packRect,
 } from './rect';
 import {
   ALIGN_TOP_TO_TOP,
@@ -83,8 +83,8 @@ export function calcAttractionOfTarget(source, target, {
   absDistance = false,
   onJudgeDistance,
 }) {
-  const sourcePack = new RectPack(source);
-  const targetPack = new RectPack(target);
+  const sourcePack = packRect(source);
+  const targetPack = packRect(target);
   const sourceRect = sourcePack.rectangle;
   const targetRect = targetPack.rectangle;
   const judgePack = onJudgeDistance && {
@@ -102,6 +102,7 @@ export function calcAttractionOfTarget(source, target, {
     if (!onJudgeDistance || onJudgeDistance(distance, alignment, judgePack)) {
       // compare distances
 
+      // console.log(330, alignment, distance)
       const { distances, min } = summary;
       const { x, y } = min;
 
@@ -126,6 +127,7 @@ export function calcAttractionOfTarget(source, target, {
 
     return summary;
   }, {
+    source: sourcePack,
     target: targetPack,
     distances: {},
     min: {
@@ -159,11 +161,7 @@ export function calcAttractionOfTarget(source, target, {
     ?x
     :y;
 
-  return {
-    ...summary, // { distances, min: { x, y, any } }
-    source: sourcePack,
-    target: targetPack,
-  };
+  return summary;
 }
 
 /**
@@ -179,15 +177,17 @@ export function calcAttractionOfMultipleTargets(
     onJudgeDistance,
     onJudgeAttraction,
   } = {},
-  bindAttractions = [],
+  initAttraction,
 ) {
+  const sourcePack = packRect(source);
   const options = {
     alignments,
     absDistance,
     onJudgeDistance,
   };
   const summary = targets.reduce((summary, target) => {
-    const attraction = calcAttractionOfTarget(source, target, options);
+    const targetPack = packRect(target);
+    const attraction = calcAttractionOfTarget(sourcePack, targetPack, options);
 
     if (!onJudgeAttraction || onJudgeAttraction(attraction)) {
       // compare attractions
@@ -223,7 +223,7 @@ export function calcAttractionOfMultipleTargets(
       }
 
       if (sort) {
-        const insertIndex = attracions.findIndex(({ min: { any } }) => {
+        const insertIndex = attractions.findIndex(({ min: { any } }) => {
           return currentMinAny.distance.value < any.distance.value;
         });
 
@@ -233,9 +233,13 @@ export function calcAttractionOfMultipleTargets(
       }
     }
 
+    summary.targets.push(targetPack);
+
     return summary;
   }, {
-    attractions: bindAttractions,
+    source: sourcePack,
+    targets: [],
+    attractions: [],
     min: {
       x: {
         // target,
@@ -262,6 +266,7 @@ export function calcAttractionOfMultipleTargets(
       //   },
       // },
     },
+    ...initAttraction,
   });
   const { min } = summary;
   const { x, y } = min;

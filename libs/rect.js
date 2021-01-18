@@ -11,6 +11,13 @@ const isRealNum = (n) => isset(n) && isnum(n);
 /**
  * Pack source to rectangle pack
  */
+export function packRect(source) {
+  if (source instanceof RectPack) {
+    return source;
+  }
+
+  return new RectPack(source);
+}
 export class RectPack {
   __raw
   __rectangle

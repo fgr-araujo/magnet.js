@@ -7,7 +7,7 @@ import {
   isfunc,
 } from './stdlib';
 import Rect, {
-  RectPack,
+  packRect,
 } from './rect';
 import PROP from './prop';
 import {
@@ -106,7 +106,7 @@ class Magnet extends HTMLElement {
       onJudgeDistance,
       onJudgeAttraction,
     } = {},
-    bindAttractions = [],
+    initAttraction,
   ) {
     return calcAttractionOfMultipleTargets(source, targets, {
       alignments,
@@ -114,7 +114,7 @@ class Magnet extends HTMLElement {
       sort,
       onJudgeDistance,
       onJudgeAttraction,
-    }, bindAttractions);
+    }, initAttraction);
   }
   
   /**
@@ -770,7 +770,9 @@ function judgeTargetDistance({ value }, alignment, judgePack) {
     return false;
   } else if (!alignToOuterline) {
     const {
-      source: sourceRect,
+      source: {
+        rectangle: sourceRect,
+      },
       target: {
         rectangle: targetRect,
       },
@@ -850,6 +852,88 @@ function judgeParentAttraction(...args) {
 }
 
 /**
+ * Generate magnet event options for custom event to pass
+ */
+function genMagnetEventOptions(source, {
+  targets = [],
+  attractions = [],
+  min: {
+    x: {
+      target: targetX,
+      alignment: alignmentX,
+      distance: {
+        raw: distanceRawX = Infinity,
+        value: distanceValueX = Infinity,
+      } = {},
+    } = {},
+    y: {
+      target: targetY,
+      alignment: alignmentY,
+      distance: {
+        raw: distanceRawY = Infinity,
+        value: distanceValueY = Infinity,
+      } = {},
+    } = {},
+    any: {
+      target: targetAny,
+      alignment: alignmentAny,
+      distance: {
+        raw: distanceRawAny = Infinity,
+        value: distanceValueAny = Infinity,
+      } = {},
+    } = {},
+  } = {},
+  nextStep: {
+    rectangle: nextRect = null,
+    offset: {
+      x: offsetX = 0,
+      y: offsetY = 0,
+    } = {},
+  } = {},
+}) {
+  return {
+    detail: {
+      source,
+      targets,
+      attractions,
+      min: {
+        x: {
+          target: targetX,
+          alignment: alignmentX,
+          distance: {
+            raw: distanceRawX,
+            value: distanceValueX,
+          },
+        },
+        y: {
+          target: targetY,
+          alignment: alignmentY,
+          distance: {
+            raw: distanceRawY,
+            value: distanceValueY,
+          },
+        },
+        any: {
+          target: targetAny,
+          alignment: alignmentAny,
+          distance: {
+            raw: distanceRawAny,
+            value: distanceValueAny,
+          },
+        },
+      },
+      nextStep: {
+        rectangle: nextRect,
+        offset: {
+          x: offsetX,
+          y: offsetY,
+        },
+      },
+    },
+  };
+}
+
+/**
  * Listener of touchstart/mousedown
  */
 function dragStartListener(event) {
@@ -859,7 +943,7 @@ function dragStartListener(event) {
     y: startY,
   } = getEventClientXY(event);
   const targets = self.getMagnetTargets()
-    .map((target) => new RectPack(target));
+    .map((target) => packRect(target));
   const alignTo = self.alignTo;
   const alignToParent = self.alignToParent;
   const alignToOuterline = alignTo.includes(Magnet.ALIGN_TO.outerline);
@@ -872,8 +956,8 @@ function dragStartListener(event) {
   const onJudgeParentDistance = judgeParentDistance.bind({ attractDistance });
   const onJudgeParentAttraction = judgeParentAttraction;
   const pack = {
-    lastAttract: null,
-    source: new RectPack(self),
+    lastAttraction: null,
+    source: packRect(self),
     targets,
     startX,
     startY,
@@ -889,7 +973,7 @@ function dragStartListener(event) {
     crossPrevent,
     crossPreventParent: crossPrevent.includes(Magnet.PREVENT_CROSS.parent),
     // crossPreventTarget: crossPrevent.includes(Magnet.PREVENT_CROSS.target), // yet to support
-    parent: new RectPack(self.parentElement),
+    parent: packRect(self.parentElement),
     optionsForTargetDistances: {
       alignments,
       absDistance: true,
@@ -966,8 +1050,8 @@ function magnetDragStartHandler(event, pack) {
  * Handler of magnet drag move
  */
 function magnetDragMoveHandler(event, pack) {
+  const self = event.target;
   const {
-    // lastAttract,??????????????????
     lastAttraction, // not ready
     source,
     startX,
@@ -1028,8 +1112,7 @@ function magnetDragMoveHandler(event, pack) {
   const finalRect = new Rect(currentRect);
 
   do {
-    // would break if any of this or target cancelled
-
+    // would break if any of self or target cancelled
     if (unattractable) {
       pack.lastAttraction = null;
       break;
@@ -1041,9 +1124,9 @@ function magnetDragMoveHandler(event, pack) {
       targets,
       optionsForTargetDistances,
       parentAlignments.length > 0
-        ?Magnet.getAttractionOfMultipleTargets(
+        ?Magnet.getAttractionOfTarget(
           currentRect,
-          [parentRect],
+          parent,
           optionsForParentDistances
         )
         :undefined
@@ -1066,19 +1149,15 @@ function magnetDragMoveHandler(event, pack) {
     const offset = calcOffsetOfAttraction(attraction);
 
     // handle unattraction
-    {
+    if (lastTargetX || lastTargetY) {
       const unattractX = lastTargetX && diffTargetX;
       const unattractY = lastTargetY && diffTargetY;
       const unattractAny = unattractX || unattractY;
 
       if (unattractAny) {
-        const optionsForUnattract = {
-          detail: {
-            //
-          },
-        };
+        const optionsForUnattract = genMagnetEventOptions(source, attraction);
 
-        // trigger unattract of this
+        // trigger unattract of self
         triggerMagnetEvent(self, Magnet.EVENT.unattract, optionsForUnattract);
 
         if (unattractX) {
@@ -1104,13 +1183,15 @@ function magnetDragMoveHandler(event, pack) {
         
       if (attractAny) {
         const attractRect = new Rect(currentRect).offset(offset.x, offset.y);
-        const optionsForAttract = {
-          detail: {
-            //
+        const optionsForAttract = genMagnetEventOptions(source, {
+          ...attraction,
+          nextStep: {
+            rectangle: attractRect,
+            offset,
           },
-        };
+        });
 
-        // trigger attract of this
+        // trigger attract of self
         triggerMagnetEvent(self, Magnet.EVENT.attract, optionsForAttract);
       
         if (attractX) {
@@ -1131,7 +1212,7 @@ function magnetDragMoveHandler(event, pack) {
   const finalX = finalRect.x - originX + lastOffsetX;
   const finalY = finalRect.y - originY + lastOffsetY;
 
-  this.handleOffset(finalX, finalY);
+  self.handleOffset(finalX, finalY);
 
   return pack;
 }
