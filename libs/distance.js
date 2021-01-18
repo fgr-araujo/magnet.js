@@ -15,6 +15,7 @@ import {
   ALIGN_X_CENTER_TO_X_CENTER,
   ALIGN_Y_CENTER_TO_Y_CENTER,
 } from './prop/alignment';
+import { isset } from './stdlib';
 
 
 // alignment on x-axis
@@ -75,9 +76,9 @@ export function calcDistance(alignment, sourceRect, targetRect) {
 }
 
 /**
- * Calculate distance from source to target
+ * Calculate attraction from source to target
  */
-export function calcDistanceOfTarget(source, target, {
+export function calcAttractionOfTarget(source, target, {
   alignments = [],
   absDistance = false,
   onJudgeDistance,
@@ -166,9 +167,9 @@ export function calcDistanceOfTarget(source, target, {
 }
 
 /**
- * Calculate distances from source to multiple targets
+ * Calculate attractions from source to multiple targets
  */
-export function calcDistanceOfMultipleTargets(
+export function calcAttractionOfMultipleTargets(
   source,
   targets = [],
   {
@@ -176,9 +177,9 @@ export function calcDistanceOfMultipleTargets(
     absDistance,
     sort = false,
     onJudgeDistance,
-    onJudgeResult,
+    onJudgeAttraction,
   } = {},
-  bindResults = [],
+  bindAttractions = [],
 ) {
   const options = {
     alignments,
@@ -186,13 +187,13 @@ export function calcDistanceOfMultipleTargets(
     onJudgeDistance,
   };
   const summary = targets.reduce((summary, target) => {
-    const result = calcDistanceOfTarget(source, target, options);
+    const attraction = calcAttractionOfTarget(source, target, options);
 
-    if (!onJudgeResult || onJudgeResult(result)) {
-      // compare results
+    if (!onJudgeAttraction || onJudgeAttraction(attraction)) {
+      // compare attractions
 
       const {
-        results,
+        attractions,
         min: summaryMin,
       } = summary;
       const {
@@ -201,7 +202,7 @@ export function calcDistanceOfMultipleTargets(
       } = summaryMin;
       const {
         min: currentMin,
-      } = result;
+      } = attraction;
       const {
         x: currentMinX,
         y: currentMinY,
@@ -222,19 +223,19 @@ export function calcDistanceOfMultipleTargets(
       }
 
       if (sort) {
-        const insertIndex = results.findIndex(({ min: { any } }) => {
+        const insertIndex = attracions.findIndex(({ min: { any } }) => {
           return currentMinAny.distance.value < any.distance.value;
         });
 
-        results.splice(insertIndex, 0, result);
+        attractions.splice(insertIndex, 0, attraction);
       } else {
-        results.push(result);
+        attractions.push(attraction);
       }
     }
 
     return summary;
   }, {
-    results: bindResults,
+    attractions: bindAttractions,
     min: {
       x: {
         // target,
@@ -270,4 +271,42 @@ export function calcDistanceOfMultipleTargets(
     :y;
 
   return summary;
+}
+
+/**
+ * Calculate offset with attraction
+ */
+export function calcOffsetOfAttraction(attraction) {
+  const {
+    min: {
+      x: minX,
+      y: minY,
+    },
+  } = attraction;
+  const offset = {
+    x: 0,
+    y: 0,
+  };
+
+  switch (minX.alignment) {
+    case ALIGN_RIGHT_TO_RIGHT:
+    case ALIGN_LEFT_TO_LEFT:
+    case ALIGN_RIGHT_TO_LEFT:
+    case ALIGN_LEFT_TO_RIGHT:
+    case ALIGN_X_CENTER_TO_X_CENTER:
+      offset.x = minX.distance.raw;
+      break;
+  }
+
+  switch (minY.alignment) {
+    case ALIGN_TOP_TO_TOP:
+    case ALIGN_BOTTOM_TO_BOTTOM:
+    case ALIGN_TOP_TO_BOTTOM:
+    case ALIGN_BOTTOM_TO_TOP:
+    case ALIGN_Y_CENTER_TO_Y_CENTER:
+      offset.y = minY.distance.raw;
+      break;
+  }
+
+  return offset;
 }
