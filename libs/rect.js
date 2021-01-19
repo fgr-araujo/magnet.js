@@ -222,6 +222,8 @@ export function isRect(
 export function stdRect(source) {
   if (source instanceof Rect) {
     return source;
+  } else if (source instanceof RectPack) {
+    return source.rectangle;
   } else if (source instanceof Element) {
     const {
       borderTopWidth,

@@ -102,13 +102,13 @@ export function calcAttractionOfTarget(source, target, {
     if (!onJudgeDistance || onJudgeDistance(distance, alignment, judgePack)) {
       // compare distances
 
-      // console.log(330, alignment, distance)
       const { distances, min } = summary;
       const { x, y } = min;
 
       if (ALIGNMENT_X.includes(alignment)) {
         if (distance.value < x.distance.value) {
           min.x = {
+            target: targetPack,
             alignment,
             distance: distance,
           };
@@ -116,6 +116,7 @@ export function calcAttractionOfTarget(source, target, {
       } else if (ALIGNMENT_Y.includes(alignment)) {
         if (distance.value < y.distance.value) {
           min.y = {
+            target: targetPack,
             alignment,
             distance: distance,
           };

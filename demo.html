@@ -34,12 +34,19 @@
         width: var(--size);
         bottom: 0;
       }
+      #blank {
+        height: 500%;
+      }
+      magnet-block {
+        position: sticky;
+        display: inline-block;
+      }
     </style>
   </head>
   <body>
     <div id="canvas">
       <magnet-block
-        style="width:100px; height:150px; background:#fcc; display:inline-block; z-index: 1;"
+        style="width:100px; height:150px; background:#fcc;"
         group="a"
         attractDistance="15"
         alignTo=""
@@ -47,12 +54,12 @@
         Hi
       </magnet-block>
       <magnet-block
-        style="width:150px; height:100px; background:#cfc; display:inline-block;"
+        style="width:150px; height:100px; background:#cfc;"
         group="a"
         attractDistance="15"
-        alignTo="outer"
+        alignTo="outer|inner|center"
         alignToParent="center|inner"
-        x-crossPrevent="parent|target"
+        crossPrevent="parent|target"
       >
         Yo
       </magnet-block>
@@ -60,6 +67,8 @@
 
     <div id="x"></div>
     <div id="y"></div>
+
+    <div id="blank"></div>
   </body>
   <script>
     (function() {
@@ -73,51 +82,50 @@
       function onAttractOrAlignChange(event) {
         const {
           detail: {
-            result: {
+            nextStep: {
+              rectangle: nextRect,
+            },
+            min: {
               x: {
-                alignment: xAlignment,
+                alignment: alignmentX,
               },
               y: {
-                alignment: yAlignment,
+                alignment: alignmentY,
               },
-              nearest,
-            },
-            target: {
-              rectangle: rectTarget,
             },
           },
         } = event;
 
         let posX, posY;
 
-        switch (xAlignment) {
+        switch (alignmentX) {
           case Magnet.ALIGNMENT.rightToRight:
-          case Magnet.ALIGNMENT.leftToRight:
-            posX = rectTarget.right;
+          case Magnet.ALIGNMENT.rightToLeft:
+            posX = nextRect.right;
             break;
 
-          case Magnet.ALIGNMENT.rightToLeft:
+          case Magnet.ALIGNMENT.leftToRight:
           case Magnet.ALIGNMENT.leftToLeft:
-            posX = rectTarget.left;
+            posX = nextRect.left;
             break;
 
           case Magnet.ALIGNMENT.xCenterToXCenter:
-            posX = .5 * (rectTarget.right + rectTarget.left);
+            posX = .5 * (nextRect.right + nextRect.left);
             break;
         }
-        switch (yAlignment) {
+        switch (alignmentY) {
           case Magnet.ALIGNMENT.topToTop:
-          case Magnet.ALIGNMENT.bottomToTop:
-            posY = rectTarget.top;
+          case Magnet.ALIGNMENT.topToBottom:
+            posY = nextRect.top;
             break;
 
-          case Magnet.ALIGNMENT.topToBottom:
+          case Magnet.ALIGNMENT.bottomToTop:
           case Magnet.ALIGNMENT.bottomToBottom:
-            posY = rectTarget.bottom;
+            posY = nextRect.bottom;
             break;
 
           case Magnet.ALIGNMENT.yCenterToYCenter:
-            posY = .5 * (rectTarget.top + rectTarget.bottom);
+            posY = .5 * (nextRect.top + nextRect.bottom);
             break;
         }
         domX.style.top = isNaN(posY) ?'' :`${posY}px`;

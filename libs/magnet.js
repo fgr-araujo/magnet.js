@@ -2,12 +2,11 @@
 
 import {
   isset, tonum, isarray, isstr,
-  objMap, objValues, objKeys,
+  objMap, objValues,
   getStyle,
-  isfunc,
 } from './stdlib';
 import Rect, {
-  packRect,
+  packRect, stdRect,
 } from './rect';
 import PROP from './prop';
 import {
@@ -17,13 +16,6 @@ import {
 } from './distance';
 
 
-const PROP_MAGNET_ROOT = '__magnet';
-const PROP_ELEM_MAGNET_RECTANGLE = '__magnetRectangle';
-const PROP_ORIGIN_STYLES = 'originStyles';
-const STYLE_PROPS = {
-  x: '--magnet-offset-x',
-  y: '--magnet-offset-y',
-};
 const SYMBOL_SPLIT = /[|;,\s]/;
 
 const EVENT = {
@@ -36,10 +28,6 @@ const EVENT = {
 class Magnet extends HTMLElement {
   constructor() {
     super();
-
-    Object.defineProperty(this, PROP_MAGNET_ROOT, {
-      value: {},
-    });
 
     // trigger enabled action
     this.attributeChangedCallback(PROP.ATTRIBUTE.DISTABLED, null, this.disabled);
@@ -263,7 +251,7 @@ class Magnet extends HTMLElement {
       ?this.getAttribute(PROP.ATTRIBUTE.ALIGN_TO_PARENT)
         .split(SYMBOL_SPLIT)
         .filter((alignToParent) => validAlignToParents.includes(alignToParent))
-      :validAlignToParents;
+      :[];
   }
   set alignToParent(alignToParent) {
     if (isset(alignToParent)) {
@@ -336,279 +324,17 @@ class Magnet extends HTMLElement {
   /**
    * Handler of magnet dragging start
    */
-  onMagnetDragStart(event, pack) {
-    return magnetDragStartHandler(event, pack);
-  }
+  onMagnetDragStart = magnetDragStartHandler.bind(this)
 
   /**
    * Handler of magnet dragging move
    */
-  onMagnetDragMove(event, pack) {
-    return magnetDragMoveHandler(event, pack);
-    
-    // if (unattractable) {
-    //   break;
-    // }
-    
-    do {
-      if (unattractable) {
-        break;
-      }
-      
-      const {
-        attractions: distances,
-        min: {
-          x: minX,
-          y: minY,
-        },
-      } = distanceAttraction;
-      const hasAttractX = isset(minX.alignment);
-      const hasAttractY = isset(minY.alignment);
-      const hasAttract = hasAttractX || hasAttractY;
-      const lastTarget = lastAttract?.nearest.target;
-      // const lastTargetRaw = lastTarget?.raw;
-      const currentXTarget = minX.target;
-      const currentYTarget = minY.target;
-      const originDetail = {
-        source,
-        // target: { raw, rectangle },
-        targets,
-        distances,
-        // min: {
-        //   x: {
-        //     target,
-        //     alignment,
-        //     distance,
-        //   },
-        //   y: {
-        //     target,
-        //     alignment,
-        //     distance,
-        //   },
-        //   any: {
-        //     target,
-        //     alignment,
-        //     distance,
-        //   },
-        // },
-      };
-
-      if (!hasAttract) {
-        // not attract to anyone
-
-        if (lastAttract) {
-          // not attract to last attracted target
-
-          const options = {
-            detail: {
-              ...originDetail,
-              target: lastTarget,
-              min: {
-                x: {
-                  // target: undefined,
-                  // alignment: undefined,
-                  distance: Infinity,
-                },
-                y: {
-                  // target: undefined,
-                  // alignment: undefined,
-                  distance: Infinity,
-                },
-                any: {
-                  // target: undefined,
-                  // alignment: undefined,
-                  distance: Infinity,
-                },
-              },
-            },
-          };
-
-          // trigger unattrect of this
-          const selfCancelled = triggerMagnetEvent(this, Magnet.EVENT.unattract, options);
-
-          if (selfCancelled) {
-            break;
-          }
-
-          // trigger unattracted of target
-          const targetCancelled = triggerMagnetEvent(lastTarget.raw, Magnet.EVENT.unattracted, options);
-
-          if (targetCancelled) {
-            break;
-          }
-
-          pack.lastAttract = null;
-        }
-
-        break;
-      }
-      // at least 1 attracted target
-
-      if (hasAttractX) {
-        // attract someone on x
-
-        const {
-          target: minXTarget,
-          alignment: minXAlignment,
-          distance: minXDistance,
-        } = minX;
-
-        finalRect.offsetX(minXDistance.raw);
-      }
-
-      if (hasAttractY) {
-        // attract someone on y
-
-        finalRect.offsetY(minYDistance.raw);
-      }
-
-      const {
-        source,
-        target,
-        ranking,
-        // distances,
-      } = nearest;
-      const {
-        raw: targetRaw,
-      } = target;
-      const minXAlignment = ranking.find((alignment) => ALIGNMENT_X.includes(alignment));
-      const minYAlignment = ranking.find((alignment) => ALIGNMENT_Y.includes(alignment));
-      const minXDistance = distances[minXAlignment];
-      const minYDistance = distances[minYAlignment];
-      
-      // align on x direction
-      switch (minXAlignment) {
-        case PROP.ALIGNMENT.ALIGN_RIGHT_TO_RIGHT:
-        case PROP.ALIGNMENT.ALIGN_LEFT_TO_LEFT:
-        case PROP.ALIGNMENT.ALIGN_RIGHT_TO_LEFT:
-        case PROP.ALIGNMENT.ALIGN_LEFT_TO_RIGHT:
-        case PROP.ALIGNMENT.ALIGN_X_CENTER_TO_X_CENTER:
-          finalRect.offsetX(minXDistance.raw);
-          break;
-      }
-
-      // align on y direction
-      switch (minYAlignment) {
-        case PROP.ALIGNMENT.ALIGN_TOP_TO_TOP:
-        case PROP.ALIGNMENT.ALIGN_BOTTOM_TO_BOTTOM:
-        case PROP.ALIGNMENT.ALIGN_TOP_TO_BOTTOM:
-        case PROP.ALIGNMENT.ALIGN_BOTTOM_TO_TOP:
-        case PROP.ALIGNMENT.ALIGN_Y_CENTER_TO_Y_CENTER:
-          finalRect.offsetY(minYDistance.raw);
-          break;
-      }
-
-      // is this still attracts to last attracted target
-      const stillLastTarget = lastTargetRaw === targetRaw;
-
-      if (!stillLastTarget) {
-        if (lastAttract) {
-          // not attract to last attracted target
-          
-          const options = {
-            detail: {
-              ...originDetail,
-              target: lastTarget,
-              attraction: {
-                x: {
-                  alignment: undefined,
-                  distance: Infinity,
-                },
-                y: {
-                  alignment: undefined,
-                  distance: Infinity,
-                },
-              },
-            },
-          };
-
-          // trigger unattrect of this
-          const selfCancelled = triggerMagnetEvent(this, Magnet.EVENT.unattract, options);
-
-          if (selfCancelled) {
-            break;
-          }
-
-          // trigger unattracted of target
-          const targetCancelled = triggerMagnetEvent(lastTargetRaw, Magnet.EVENT.unattracted, options);
-
-          if (targetCancelled) {
-            break;
-          }
-        }
-
-        delete pack.lastAttract;
-      }
-      
-      const lastMinXAlignment = lastAttract && lastAttract.x.alignment;
-      const lastMinYAlignment = lastAttract && lastAttract.y.alignment;
-      const alignmentChanged = lastMinXAlignment !== minXAlignment || lastMinYAlignment !== minYAlignment;
-      const triggerAttract = !stillLastTarget || alignmentChanged;
-      const options = {
-        detail: {
-          ...originDetail,
-          target,
-          result: {
-            ...originDetail.result,
-            x: {
-              alignment: minXAlignment,
-              distance: minXDistance,
-            },
-            y: {
-              alignment: minYAlignment,
-              distance: minYDistance,
-            },
-            offset: {
-              source: {
-                from: currentRect,
-                to: finalRect,
-              },
-            },
-          },
-        },
-      };
-
-      // trigger attract/move of this
-      const selfCancelled = triggerMagnetEvent(
-        this,
-        triggerAttract
-          ?Magnet.EVENT.attract
-          :Magnet.EVENT.attractMove,
-        options
-      );
-
-      if (selfCancelled) {
-        break;
-      }
-
-      // trigger attracted/move of target
-      const targetCancelled = triggerMagnetEvent(
-        targetRaw,
-        triggerAttract
-          ?Magnet.EVENT.attracted
-          :Magnet.EVENT.attractedMove,
-        options
-      );
-      
-      if (targetCancelled) {
-        break;
-      }
-
-      pack.lastAttract = options.detail.result;
-    } while (false);
-
-    const finalX = finalRect.x - originX + lastOffsetX;
-    const finalY = finalRect.y - originY + lastOffsetY;
-
-    this.handleOffset(finalX, finalY);
-  }
+  onMagnetDragMove = magnetDragMoveHandler.bind(this)
 
   /**
    * Handler of magnet dragging end
    */
-  onMagnetDragEnd(event, pack) {
-    return magnetDragEndHandler(event, pack);
-  }
+  onMagnetDragEnd = magnetDragEndHandler.bind(this)
 
   /**
    * Get group targets
@@ -654,16 +380,16 @@ class Magnet extends HTMLElement {
    * Move position to (x, y)
    */
   handleOffset(x, y) {
-    this.style.setProperty(STYLE_PROPS.x, `${x}px`, 'important');
-    this.style.setProperty(STYLE_PROPS.y, `${y}px`, 'important');
+    this.style.setProperty(PROP.STYLE.VAR_MAGNET_OFFSET_X, `${x}px`, 'important');
+    this.style.setProperty(PROP.STYLE.VAR_MAGNET_OFFSET_Y, `${y}px`, 'important');
   }
 
   /**
    * Reset position
    */
   resetPosition() {
-    this.style.removeProperty(STYLE_PROPS.x);
-    this.style.removeProperty(STYLE_PROPS.y);
+    this.style.removeProperty(PROP.STYLE.VAR_MAGNET_OFFSET_X);
+    this.style.removeProperty(PROP.STYLE.VAR_MAGNET_OFFSET_Y);
     this.style.removeProperty('transform');
   }
 }
@@ -854,43 +580,40 @@ function judgeParentAttraction(...args) {
 /**
  * Generate magnet event options for custom event to pass
  */
-function genMagnetEventOptions(source, {
-  targets = [],
-  attractions = [],
-  min: {
-    x: {
-      target: targetX,
-      alignment: alignmentX,
-      distance: {
-        raw: distanceRawX = Infinity,
-        value: distanceValueX = Infinity,
+function genMagnetEventOptions(
+  source,
+  {
+    targets = [],
+    attractions = [],
+    min: {
+      x: {
+        target: targetX,
+        alignment: alignmentX,
+        distance: {
+          raw: distanceRawX = Infinity,
+          value: distanceValueX = Infinity,
+        } = {},
+      } = {},
+      y: {
+        target: targetY,
+        alignment: alignmentY,
+        distance: {
+          raw: distanceRawY = Infinity,
+          value: distanceValueY = Infinity,
+        } = {},
+      } = {},
+      any: {
+        target: targetAny,
+        alignment: alignmentAny,
+        distance: {
+          raw: distanceRawAny = Infinity,
+          value: distanceValueAny = Infinity,
+        } = {},
       } = {},
     } = {},
-    y: {
-      target: targetY,
-      alignment: alignmentY,
-      distance: {
-        raw: distanceRawY = Infinity,
-        value: distanceValueY = Infinity,
-      } = {},
-    } = {},
-    any: {
-      target: targetAny,
-      alignment: alignmentAny,
-      distance: {
-        raw: distanceRawAny = Infinity,
-        value: distanceValueAny = Infinity,
-      } = {},
-    } = {},
-  } = {},
-  nextStep: {
-    rectangle: nextRect = null,
-    offset: {
-      x: offsetX = 0,
-      y: offsetY = 0,
-    } = {},
-  } = {},
-}) {
+  },
+  nextRect = stdRect(source),
+) {
   return {
     detail: {
       source,
@@ -925,8 +648,8 @@ function genMagnetEventOptions(source, {
       nextStep: {
         rectangle: nextRect,
         offset: {
-          x: offsetX,
-          y: offsetY,
+          x: nextRect.x,
+          y: nextRect.y,
         },
       },
     },
@@ -937,18 +660,17 @@ function genMagnetEventOptions(source, {
  * Listener of touchstart/mousedown
  */
 function dragStartListener(event) {
-  const self = event.target;
   const {
     x: startX,
     y: startY,
   } = getEventClientXY(event);
-  const targets = self.getMagnetTargets()
+  const targets = this.getMagnetTargets()
     .map((target) => packRect(target));
-  const alignTo = self.alignTo;
-  const alignToParent = self.alignToParent;
+  const alignTo = this.alignTo;
+  const alignToParent = this.alignToParent;
   const alignToOuterline = alignTo.includes(Magnet.ALIGN_TO.outerline);
-  const crossPrevent = self.crossPrevent;
-  const attractDistance = self.attractDistance;
+  const crossPrevent = this.crossPrevent;
+  const attractDistance = this.attractDistance;
   const alignments = getAlignmentsFromAlignTo(alignTo);
   const parentAlignments = getAlignmentsFromAlignTo(alignToParent);
   const onJudgeTargetDistance = judgeTargetDistance.bind({ attractDistance, alignToOuterline });
@@ -957,13 +679,13 @@ function dragStartListener(event) {
   const onJudgeParentAttraction = judgeParentAttraction;
   const pack = {
     lastAttraction: null,
-    source: packRect(self),
+    source: packRect(this),
     targets,
     startX,
     startY,
-    lastOffsetX: tonum(self.style.getPropertyValue(STYLE_PROPS.x) || 0),
-    lastOffsetY: tonum(self.style.getPropertyValue(STYLE_PROPS.y) || 0),
-    unattractable: self.unattractable,
+    lastOffsetX: tonum(this.style.getPropertyValue(PROP.STYLE.VAR_MAGNET_OFFSET_X) || 0),
+    lastOffsetY: tonum(this.style.getPropertyValue(PROP.STYLE.VAR_MAGNET_OFFSET_Y) || 0),
+    unattractable: this.unattractable,
     attractDistance,
     alignTo,
     alignToParent,
@@ -973,7 +695,7 @@ function dragStartListener(event) {
     crossPrevent,
     crossPreventParent: crossPrevent.includes(Magnet.PREVENT_CROSS.parent),
     // crossPreventTarget: crossPrevent.includes(Magnet.PREVENT_CROSS.target), // yet to support
-    parent: packRect(self.parentElement),
+    parent: packRect(this.parentElement),
     optionsForTargetDistances: {
       alignments,
       absDistance: true,
@@ -993,7 +715,9 @@ function dragStartListener(event) {
     detail: pack,
   };
 
-  if (!triggerMagnetEvent(self, Magnet.EVENT.start, options)) {
+  if (!triggerMagnetEvent(this, Magnet.EVENT.start, options)) {
+    const self = this;
+
     let passPack;
 
     function onDragMove(event) {
@@ -1013,7 +737,7 @@ function dragStartListener(event) {
 
     addEventListener(document.body, EVENT.dragMove, onDragMove);
     addEventListener(document.body, EVENT.dragEnd, onDragEnd);
-    passPack = self.onMagnetDragStart(event, pack);
+    passPack = this.onMagnetDragStart(event, pack, passPack);
   }
 }
 
@@ -1021,36 +745,45 @@ function dragStartListener(event) {
  * Handler of magnet drag start
  */
 function magnetDragStartHandler(event, pack) {
-  const self = event.target;
   const {
     position,
     zIndex,
     transform,
-  } = getStyle(self);
+  } = getStyle(this);
 
   event.preventDefault();
   event.stopImmediatePropagation();
 
-  self.style.setProperty('position', 'relative');
-  self.style.setProperty('z-index', Date.now(), 'important');
+  switch (position) {
+    case 'relative':
+    case 'fixed':
+    case 'absolute':
+      break;
+
+    default:
+      this.style.setProperty('position', 'relative');
+      break;
+  }
+
+  this.style.setProperty('z-index', (Date.now() / 1000) | 0);
 
   // TODO: handle origin transform?
-  self.style.setProperty('transform', `translate(var(${STYLE_PROPS.x}), var(${STYLE_PROPS.y}))`, 'important');
-
-  self[PROP_MAGNET_ROOT][PROP_ORIGIN_STYLES] = {
-    position,
-    zIndex,
-    transform,
-  };
+  this.style.setProperty('transform', `translate(var(${PROP.STYLE.VAR_MAGNET_OFFSET_X}), var(${PROP.STYLE.VAR_MAGNET_OFFSET_Y}))`, 'important');
   
-  return self.onMagnetDragMove(event, pack);
+  return {
+    originStyle: {
+      position,
+      transform,
+      zIndex,
+    },
+    ...this.onMagnetDragMove(event, pack),
+  };
 }
 
 /**
  * Handler of magnet drag move
  */
-function magnetDragMoveHandler(event, pack) {
-  const self = event.target;
+function magnetDragMoveHandler(event, pack, passPack) {
   const {
     lastAttraction, // not ready
     source,
@@ -1112,7 +845,7 @@ function magnetDragMoveHandler(event, pack) {
   const finalRect = new Rect(currentRect);
 
   do {
-    // would break if any of self or target cancelled
+    // would break if any of this or target cancelled
     if (unattractable) {
       pack.lastAttraction = null;
       break;
@@ -1147,6 +880,8 @@ function magnetDragMoveHandler(event, pack) {
     const diffTargetX = lastTargetX !== targetX;
     const diffTargetY = lastTargetY !== targetY;
     const offset = calcOffsetOfAttraction(attraction);
+    const attractRect = new Rect(currentRect).offset(offset.x, offset.y);
+    const eventOptions = genMagnetEventOptions(source, attraction, attractRect);
 
     // handle unattraction
     if (lastTargetX || lastTargetY) {
@@ -1155,10 +890,10 @@ function magnetDragMoveHandler(event, pack) {
       const unattractAny = unattractX || unattractY;
 
       if (unattractAny) {
-        const optionsForUnattract = genMagnetEventOptions(source, attraction);
+        const optionsForUnattract = eventOptions;
 
-        // trigger unattract of self
-        triggerMagnetEvent(self, Magnet.EVENT.unattract, optionsForUnattract);
+        // trigger unattract of this
+        triggerMagnetEvent(this, Magnet.EVENT.unattract, optionsForUnattract);
 
         if (unattractX) {
           // trigger unattracted of last target x
@@ -1180,19 +915,12 @@ function magnetDragMoveHandler(event, pack) {
       const attractX = targetX && (diffTargetX || lastAlignmentX !== alignmentX);
       const attractY = targetY && (diffTargetY || lastAlignmentY !== alignmentY);
       const attractAny = attractX || attractY;
-        
-      if (attractAny) {
-        const attractRect = new Rect(currentRect).offset(offset.x, offset.y);
-        const optionsForAttract = genMagnetEventOptions(source, {
-          ...attraction,
-          nextStep: {
-            rectangle: attractRect,
-            offset,
-          },
-        });
 
-        // trigger attract of self
-        triggerMagnetEvent(self, Magnet.EVENT.attract, optionsForAttract);
+      if (attractAny) {
+        const optionsForAttract = eventOptions;
+
+        // trigger attract of this
+        triggerMagnetEvent(this, Magnet.EVENT.attract, optionsForAttract);
       
         if (attractX) {
           // trigger attracted of target x
@@ -1212,28 +940,38 @@ function magnetDragMoveHandler(event, pack) {
   const finalX = finalRect.x - originX + lastOffsetX;
   const finalY = finalRect.y - originY + lastOffsetY;
 
-  self.handleOffset(finalX, finalY);
+  this.handleOffset(finalX, finalY);
 
-  return pack;
+  return passPack;
 }
 
 /**
  * Handler of magnet drag end
  */
-function magnetDragEndHandler(event, pack) {
-  const self = event.target;
+function magnetDragEndHandler(event, pack, passPack) {
   const {
-    [PROP_ORIGIN_STYLES]: {
+    originStyle: {
       position,
       zIndex,
       transform,
     } = {},
-  } = self[PROP_MAGNET_ROOT];
+  } = passPack;
 
-  self.style.setProperty('position', position);
-  self.style.setProperty('z-index', zIndex);
+  if (isset(position)) {
+    // if assigned position, set it back
+    this.style.setProperty('position', position);
+  }
+
+  if (isset(zIndex)) {
+    // if assigned z-index, set it back
+    this.style.setProperty('z-index', zIndex);
+  }
 
   // TODO: handle origin transform?
+
+  delete passPack.originStyle;
+
+  return passPack;
 }
 
 
