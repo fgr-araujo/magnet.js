@@ -920,15 +920,23 @@ function magnetDragMoveHandler(event, pack, passPack) {
         const optionsForAttract = eventOptions;
 
         // trigger attract of this
-        triggerMagnetEvent(this, Magnet.EVENT.attract, optionsForAttract);
+        if (triggerMagnetEvent(this, Magnet.EVENT.attract, optionsForAttract)) {
+          break;
+        }
       
         if (attractX) {
           // trigger attracted of target x
-          triggerMagnetEvent(targetX, Magnet.EVENT.attracted, optionsForAttract);
+          if (triggerMagnetEvent(targetX, Magnet.EVENT.attracted, optionsForAttract)) {
+            // cancel being attracted on x-axis of target
+            offset.x = 0;
+          }
         }
         if (attractY) {
           // trigger attracted of target y
-          triggerMagnetEvent(targetY, Magnet.EVENT.attracted, optionsForAttract);
+          if (triggerMagnetEvent(targetY, Magnet.EVENT.attracted, optionsForAttract)) {
+            // cancel being attracted on y-axis of target
+            offset.y = 0;
+          }
         }
       }
     }
