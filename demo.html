@@ -49,7 +49,7 @@
         style="width:100px; height:150px; background:#fcc;"
         group="a"
         attractDistance="15"
-        alignTo=""
+        alignTo="outer"
       >
         Hi
       </magnet-block>
@@ -57,11 +57,45 @@
         style="width:150px; height:100px; background:#cfc;"
         group="a"
         attractDistance="15"
-        alignTo="outer|inner|center"
+        alignTo="outer|inner|center|outerline"
         alignToParent="center|inner"
         crossPrevent="parent|target"
       >
         Yo
+      </magnet-block>
+      <magnet-group
+        group="a"
+      >
+        <magnet-group
+          attractDistance="25"
+          alignTo="outer"
+        >
+          <magnet-block
+            style="width:100px; height:100px; background:#ccf;"
+          >
+            Uhn
+          </magnet-block>
+        </magnet-group>
+      </magnet-group>
+
+      <magnet-block group="A" attractDistance="10">
+        <div style="padding:1em; background:#fcc">
+          Hello Magnet.js
+        </div>
+      </magnet-block>
+      
+      <!-- has larger attract distance -->
+      <magnet-block group="A" attractDistance="25">
+        <div style="padding:1em; background:#cfc">
+          Larger attraction
+        </div>
+      </magnet-block>
+      
+      <!-- only for attracting -->
+      <magnet-block group="A" unmovable>
+        <div style="padding:1em; background:#ccf">
+          You cannot drag me
+        </div>
       </magnet-block>
     </div>
 

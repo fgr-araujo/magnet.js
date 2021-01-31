@@ -1,101 +1,125 @@
 # Magnet.js
 
-Magnet.js is a JavaScript library making HTML elements attractable with others in the same group.
+Magnet.js is a JavaScript library that groups HTML elements and makes them attractable with each other
 
 ## Demo
 
-## How to Use
+### [Basic demo](https://lf2com.github.io/magnet.js/demo/demo_types.html)
 
-### Node.js
+> [jQuery version](https://lf2com.github.io/magnet.js/demo/demo_types_jquery.html)
 
-Install with npm
+- Configure magnet attract distance
+- Switch to stay in parent element
+- Align to outer/inner edge of the others
+- Align to the x/y center of the others
+- Align to the x/y center of parent element
 
-```sh
-npm install @lf2com/magnet.js
+### [Group demo](https://lf2com.github.io/magnet.js/demo/demo_groups.html)
 
-# Or install from GitHub
-npm install https://github.com/lf2com/magnet.js
-# The same as above
-npm install lf2com/magnet.js
-```
+4 magnet groups that can attract the others in their own groups or all the other group members.
 
-Then we can import/require `@lf2com/magnet.js` in your JS code
+### [Arrow key demo](https://lf2com.github.io/magnet.js/demo/demo_arrow.html)
 
-```js
-import Magnet from '@lf2com/magnet.js';
-// Or
-const Magnet = require('@lf2com/magnet.js');
-```
+Extend the [Basic demo](#basic-demo) with new features:
 
-### Browser
+- Support arrow keys to move focused box (also support `a`/`w`/`d`/`s` keys)
+- Configure `px` unit of arrow_ (
+- _**`unit < distance` would cause the box stuck with the others when attracted**_
 
-Download the [**JS**](https://github.com/lf2com/magnet.js/releases) or directly link it from GitHub
-
-```html
-<!-- include script -->
-<script src="PATH/TO/magnet.min.js"></script>
-<!-- or -->
-<script src="https://lf2com.github.io/magnet.js/magnet.min.js"></script>
-
-<script>
-  console.log(window.Magnet); // Magnet should be accessable
-</script>
-```
-
-## How to Build
-
-We can directly run [build](#build) command at `magnet.js` path if gonna build `magnet.js` under `node_modules` path of out project
+## Install
 
 ### Git
-
-Clone repository from GitHub and install required modules
 
 ```sh
 git clone https://github.com/lf2com/magnet.js.git
 cd magnet.js
-npm install
+npm install .
 ```
+
+### NodeJS
+
+> **CAUTION: Magnet.js is not tested on NodeJS environment. It uses `document` and `eventListener` related functions.**
+
+```sh
+npm install @lf2com/magnet.js
+# Or
+npm install https://github.com/lf2com/magnet.js
+```
+
+> #### Import
+>
+> ```js
+> import Magnet from '@lf2com/magnet.js';
+> // Or
+> const Magnet = require('@lf2com/magnet.js');
+> ```
 
 ### Build
 
-Run the following command and `magnet.min.js` would be built at the project path
+The required files are `./index.js` and `./libs/*.js`. All dependencies in `./package.json` are only used for building a packaged/minified JS file as `./magnet.min.js`. Since the code registered as `window.Magnet`. You can build a browser-used **`magnet.min.js`** with the following commands:
 
 ```sh
 npm run build
 ```
 
-## Usage
+> #### Build jQuery Plugin
+>
+> Build `./jquery-magnet.min.js`
+>
+> ```sh
+> npm run jquery-build
+> ```
+>
+> #### Build All
+>
+> Build both `./magnet.min.js` and `./jquery-magnet.min.js`
+>
+> ```sh
+> npm run all-build
+> ```
+>
+> #### Debug Build
+>
+> Append **`-debug`** on any `build` command
+>
+> ```sh
+> npm run build-debug
+>
+> # for jQuery
+> npm run jquery-build-debug
+> 
+> # for both
+> npm run all-build-debug
+> ```
 
-Magnet.js departs 2 modules: [`<manget-block>`](#magnet-block) and [`<magnet-group>`](#magnet-group)
+### Browser
 
-### Magnet Block
-
-`<magnet-block>` is designed to be a DOM for dragging and attracting each other
-
-
+Download from this repository or use your own built: [**`magnet.min.js`**](https://lf2com.github.io/magnet.js/magnet.min.js)
 
 ```html
-<!-- simple magnet block -->
-<magnet-block group="A" attractDistance="10">
-  <div style="padding:1em; background:#fcc">
-    Hello Magnet.js
-  </div>
-</magnet-block>
+<!-- include script -->
+<script src="PATH/TO/magnet.min.js"></script>
 
-<!-- has larger attract distance -->
-<magnet-block group="A" attractDistance="25">
-  <div style="padding:1em; background:#cfc">
-    Larger attraction
-  </div>
-</magnet-block>
-
-<!-- only for attracting -->
-<magnet-block group="A" unmovable>
-  <div style="padding:1em; background:#ccf">
-    You cannot drag me
-  </div>
-</magnet-block>
+<script>
+  console.log(window.Magnet); // here it is
+</script>
 ```
+
+> #### jQuery Plugin
+>
+> **NOTICE: Please include jQuery library before incluing `jquery-magnet.min.js`**
+>
+> ```html
+> <script src="PATH/TO/jQuery.js"></script>
+> <script src="PATH/TO/jquery-magnet.min.js"></script>
+> <script>
+>   (function($) {
+>     console.log($.magnet); // here it is
+>   })(jQuery);
+> </script>
+> ```
+
+## Usage of Magnet
 
 ### Create Magnet Group
 

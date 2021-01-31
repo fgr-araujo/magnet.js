@@ -15,11 +15,11 @@ import {
   ALIGN_X_CENTER_TO_X_CENTER,
   ALIGN_Y_CENTER_TO_Y_CENTER,
 } from './prop/alignment';
-import { isset } from './stdlib';
+import { isset } from '../stdlib';
 
 
 // alignment on x-axis
-const ALIGNMENT_X = [
+export const ALIGNMENT_X = [
   ALIGN_RIGHT_TO_RIGHT,
   ALIGN_RIGHT_TO_LEFT,
   ALIGN_LEFT_TO_LEFT,
@@ -28,7 +28,7 @@ const ALIGNMENT_X = [
 ];
 
 // alignment on y-axis
-const ALIGNMENT_Y = [
+export const ALIGNMENT_Y = [
   ALIGN_TOP_TO_TOP,
   ALIGN_TOP_TO_BOTTOM,
   ALIGN_BOTTOM_TO_BOTTOM,
@@ -76,6 +76,13 @@ export function calcDistance(alignment, sourceRect, targetRect) {
 }
 
 /**
+ * Get bias gap of alignment
+ */
+export function getAlignmentBiasGap(source) {
+  return .33 * (source?.attractDistance || 0);
+}
+
+/**
  * Calculate attraction from source to target
  */
 export function calcAttractionOfTarget(source, target, {
@@ -91,6 +98,7 @@ export function calcAttractionOfTarget(source, target, {
     source: sourcePack,
     target: targetPack,
   };
+  const biasGap = getAlignmentBiasGap(source);
   const stdNum = absDistance
     ?Math.abs
     :(n) => n;
@@ -106,21 +114,75 @@ export function calcAttractionOfTarget(source, target, {
       const { x, y } = min;
 
       if (ALIGNMENT_X.includes(alignment)) {
-        if (distance.value < x.distance.value) {
+        // x-axis
+        const distanceValueX = x.distance.value;
+
+        do {
+          if (value < distanceValueX) {
+            // to be new min.x
+          } else if (value > distanceValueX) {
+            // larger than min.x
+            break;
+          } else {
+            // check which edge is nearer to original x offset
+            const diffX = sourceRect.left - targetRect.left;
+            
+            if (diffX > biasGap) { // right
+              if (alignment !== ALIGN_RIGHT_TO_RIGHT) {
+                break;
+              }
+            } else if (diffX < -biasGap) { // left
+              if (alignment !== ALIGN_LEFT_TO_LEFT) {
+                break;
+              }
+            } else { // x center
+              if (alignment !== ALIGN_X_CENTER_TO_X_CENTER) {
+                break;
+              }
+            }
+          }
+          
           min.x = {
             target: targetPack,
             alignment,
             distance: distance,
           };
-        }
+        } while (false);
       } else if (ALIGNMENT_Y.includes(alignment)) {
-        if (distance.value < y.distance.value) {
+        // y-axis
+        const distanceValueY = y.distance.value;
+
+        do {
+          if (value < distanceValueY) {
+            // to be new min.y
+          } else if (value > distanceValueY) {
+            // larger than min.y
+            break;
+          } else {
+            // check which edge is nearer to original y offset
+            const diffY = sourceRect.top - targetRect.top;
+
+            if (diffY > biasGap) { // bottom
+              if (alignment !== ALIGN_BOTTOM_TO_BOTTOM) {
+                break;
+              }
+            } else if (diffY < -biasGap) { // top
+              if (alignment !== ALIGN_TOP_TO_TOP) {
+                break;
+              }
+            } else { // x center
+              if (alignment !== ALIGN_Y_CENTER_TO_Y_CENTER) {
+                break;
+              }
+            }
+          }
+
           min.y = {
             target: targetPack,
             alignment,
             distance: distance,
           };
-        }
+        } while (false);
       }
 
       distances[alignment] = distance;
@@ -174,7 +236,6 @@ export function calcAttractionOfMultipleTargets(
   {
     alignments,
     absDistance,
-    sort = false,
     onJudgeDistance,
     onJudgeAttraction,
   } = {},
@@ -201,37 +262,90 @@ export function calcAttractionOfMultipleTargets(
         x: summaryMinX,
         y: summaryMinY,
       } = summaryMin;
+      const summaryMinXValue = summaryMinX.distance.value;
+      const summaryMinYValue = summaryMinY.distance.value;
       const {
         min: currentMin,
       } = attraction;
       const {
         x: currentMinX,
         y: currentMinY,
-        any: currentMinAny,
       } = currentMin;
+      const currentMinXValue = currentMinX.distance.value;
+      const currentMinYValue = currentMinY.distance.value;
 
-      if (currentMinX.distance.value < summaryMinX.distance.value) {
+      do {
+        if (currentMinXValue < summaryMinXValue) {
+          // to be new min.x
+        } else if (currentMinXValue > summaryMinXValue) {
+          // larger than min.x
+          break;
+        } else {
+          // check which one is nearer on y-axis
+          const currentDiffY = Math.abs(
+            (sourcePack.rectangle.top + sourcePack.rectangle.bottom)
+            -(targetPack.rectangle.top + targetPack.rectangle.bottom)
+          );
+          const summaryMinXTargetRect = summaryMinX.target?.rectangle;
+
+          if (summaryMinXTargetRect) {
+            if (!isset(summaryMinX._diffY)) {
+              summaryMinX._diffY = Math.abs(
+                (sourcePack.rectangle.top + sourcePack.rectangle.bottom)
+                -(summaryMinXTargetRect.top + summaryMinXTargetRect.bottom)
+              );
+            }
+
+            if (currentDiffY > summaryMinX._diffY) {
+              break;
+            }
+          }
+
+          currentMinX._diffY = currentDiffY;
+          delete summaryMinX._diffY;
+        }
+        
         summaryMin.x = {
           ...currentMinX,
           target,
         };
-      }
-      if (currentMinY.distance.value < summaryMinY.distance.value) {
+      } while (false);
+
+      do {
+        if (currentMinYValue < summaryMinYValue) {
+          // to be new min.y
+        } else if (currentMinYValue > summaryMinYValue) {
+          // larger than min.y
+          break;
+        } else {
+          // check which one is nearer on x-axis
+          const currentDiffX = Math.abs(
+            (sourcePack.rectangle.left + sourcePack.rectangle.right)
+            -(targetPack.rectangle.left + targetPack.rectangle.right)
+          );
+          const summaryMinYTargetRect = summaryMinY.target?.rectangle;
+
+          if (summaryMinYTargetRect) {
+            if (!isset(summaryMinY._diffX)) {
+              summaryMinY._diffX = Math.abs(
+                (sourcePack.rectangle.left + sourcePack.rectangle.right)
+                -(summaryMinYTargetRect.left + summaryMinYTargetRect.right)
+              );
+            }
+
+            if (currentDiffX > summaryMinY._diffX) {
+              break;
+            }
+          }
+        }
+
         summaryMin.y = {
           ...currentMinY,
           target,
         };
-      }
+      } while (false);
 
-      if (sort) {
-        const insertIndex = attractions.findIndex(({ min: { any } }) => {
-          return currentMinAny.distance.value < any.distance.value;
-        });
-
-        attractions.splice(insertIndex, 0, attraction);
-      } else {
-        attractions.push(attraction);
-      }
+      attractions.push(attraction);
     }
 
     summary.targets.push(targetPack);
@@ -275,6 +389,9 @@ export function calcAttractionOfMultipleTargets(
   min.any = x.distance.value < y.distance.value
     ?x
     :y;
+
+  delete x._diffY;
+  delete y._diffX;
 
   return summary;
 }

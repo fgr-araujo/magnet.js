@@ -4,9 +4,16 @@ import {
   isset, iselem, isfunc,
   isnum, tonum,
   getStyle,
-} from './stdlib';
+} from '../stdlib';
 
 const isRealNum = (n) => isset(n) && isnum(n);
+
+/**
+ * Check if source is rectangle pack object
+ */
+function isRectPack(source) {
+  return source instanceof RectPack;
+}
 
 /**
  * Pack source to rectangle pack
@@ -23,7 +30,7 @@ export class RectPack {
   __rectangle
 
   constructor(source) {
-    if (source instanceof RectPack) {
+    if (isRectPack(source)) {
       this.__raw = source.raw;
       this.__rectangle = source.rectangle;
     } else {
@@ -304,11 +311,13 @@ class Rect {
   __height = 0
 
   constructor(source) {
-    const rect = isRect(source, {
-      afterFunc: (rect) => {
-        return rect;
-      },
-    });
+    const rect = isRectPack(source)
+      ?source.rectangle
+      :isRect(source, {
+        afterFunc: (rect) => {
+          return rect;
+        },
+      });
 
     if (rect) {
       this.__top = rect.top;
