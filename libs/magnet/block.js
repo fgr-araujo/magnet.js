@@ -124,7 +124,7 @@ class Magnet extends MagnetGroup {
     attractedMove: 'attractedmove', // be attracted and source is moving
     unattracted: 'unattracted',     // source escape
   }, (value) => ({
-    value: `magnet${value}`, // prefix
+    value: `mg-${value}`, // prefix
     enumerable: true,
   })))
 
@@ -149,7 +149,7 @@ class Magnet extends MagnetGroup {
   getMagnetTargets() {
     const group = this.group;
     const selectorGroup = isstr(group)
-      ?`[group="${group}"]`
+      ?`[${PROP.ATTRIBUTE.GROUP}="${group}"]`
       :'';
     const selectorDisabled = `:not([${PROP.ATTRIBUTE.DISTABLED}])`;
     const selectorAttractable = `:not([${PROP.ATTRIBUTE.UNATTRACTABLE}])`;
@@ -303,66 +303,69 @@ function judgeTargetDistance({ value }, alignment, judgePack) {
 
   if (value > attractDistance) {
     return false;
-  } else if (!alignToOuterline) {
-    const {
-      source: {
-        rectangle: sourceRect,
-      },
-      target: {
-        rectangle: targetRect,
-      },
-    } = judgePack;
-
-    switch (alignment) {
-      case Magnet.ALIGNMENT.rightToRight:
-      case Magnet.ALIGNMENT.leftToLeft:
-      case Magnet.ALIGNMENT.rightToLeft:
-      case Magnet.ALIGNMENT.leftToRight:
-        {
-          const {
-            top: sourceTop,
-            bottom: sourceBottom,
-          } = sourceRect;
-          const {
-            top: targetTop,
-            bottom: targetBottom,
-          } = targetRect;
-
-          if (isInBiasRange(attractDistance, sourceTop, sourceBottom, targetTop, targetBottom)) {
-            return true;
-          } else if (isInBiasRange(attractDistance, targetTop, targetBottom, sourceTop, sourceBottom)) {
-            return true;
-          }
-
-          return false;
-        }
-
-      case Magnet.ALIGNMENT.topToTop:
-      case Magnet.ALIGNMENT.bottomToBottom:
-      case Magnet.ALIGNMENT.topToBottom:
-      case Magnet.ALIGNMENT.bottomToTop:
-        {
-          const {
-            right: sourceRight,
-            left: sourceLeft,
-          } = sourceRect;
-          const {
-            right: targetRight,
-            left: targetLeft,
-          } = targetRect;
-
-          if (isInBiasRange(attractDistance, sourceLeft, sourceRight, targetLeft, targetRight)) {
-            return true;
-          } else if (isInBiasRange(attractDistance, targetLeft, targetRight, sourceLeft, sourceRight)) {
-            return true;
-          }
-          
-          return false;
-        }
-    }
+  } else if (alignToOuterline) {
+    return true;
   }
-  
-  return true;
+
+  const {
+    source: {
+      rectangle: sourceRect,
+    },
+    target: {
+      rectangle: targetRect,
+    },
+  } = judgePack;
+
+  switch (alignment) {
+    default:
+      return true;
+
+    case Magnet.ALIGNMENT.rightToRight:
+    case Magnet.ALIGNMENT.leftToLeft:
+    case Magnet.ALIGNMENT.rightToLeft:
+    case Magnet.ALIGNMENT.leftToRight:
+      {
+        const {
+          top: sourceTop,
+          bottom: sourceBottom,
+        } = sourceRect;
+        const {
+          top: targetTop,
+          bottom: targetBottom,
+        } = targetRect;
+
+        if (isInBiasRange(attractDistance, sourceTop, sourceBottom, targetTop, targetBottom)) {
+          return true;
+        } else if (isInBiasRange(attractDistance, targetTop, targetBottom, sourceTop, sourceBottom)) {
+          return true;
+        }
+
+        return false;
+      }
+
+    case Magnet.ALIGNMENT.topToTop:
+    case Magnet.ALIGNMENT.bottomToBottom:
+    case Magnet.ALIGNMENT.topToBottom:
+    case Magnet.ALIGNMENT.bottomToTop:
+      {
+        const {
+          right: sourceRight,
+          left: sourceLeft,
+        } = sourceRect;
+        const {
+          right: targetRight,
+          left: targetLeft,
+        } = targetRect;
+
+        if (isInBiasRange(attractDistance, sourceLeft, sourceRight, targetLeft, targetRight)) {
+          return true;
+        } else if (isInBiasRange(attractDistance, targetLeft, targetRight, sourceLeft, sourceRight)) {
+          return true;
+        }
+        
+        return false;
+      }
+  }
 }
 
 /**
@@ -534,16 +537,16 @@ function dragStartListener(event) {
     }
 
     function onDragEnd(event) {
-      removeEventListener(document.body, EVENT.dragMove, onDragMove);
-      removeEventListener(document.body, EVENT.dragEnd, onDragEnd);
+      removeEventListener(document, EVENT.dragMove, onDragMove);
+      removeEventListener(document, EVENT.dragEnd, onDragEnd);
 
       if (!triggerMagnetEvent(self, Magnet.EVENT.end, options)) {
         passPack = self.onMagnetDragEnd(event, pack, passPack);
       }
     };
 
-    addEventListener(document.body, EVENT.dragMove, onDragMove);
-    addEventListener(document.body, EVENT.dragEnd, onDragEnd);
+    addEventListener(document, EVENT.dragMove, onDragMove);
+    addEventListener(document, EVENT.dragEnd, onDragEnd);
     passPack = this.onMagnetDragStart(event, pack, passPack);
   }
 }
@@ -672,7 +675,6 @@ function magnetDragMoveHandler(event, pack, passPack) {
         )
         :undefined
     );
-    console.log(31, attraction);
 
     const {
       min: {

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width">
+    <title>Magnet.js Demo</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="../magnet.min.js"></script>
+    <script src="./axis.js"></script>
+    <script src="./attraction.js"></script>
+  </head>
+  <body>
+    <magnet-group
+      style="--color: #f00; width: 70vw; height: 50vh; border: 1px solid var(--color); overflow: hidden;"
+      mg-group="A"
+      mg-crossPrevent="parent"
+      mg-attractDistance="10"
+    >
+      <!-- simple magnet block -->
+      <magnet-block>
+        <div style="padding:1em; background: #fcc">
+          Inside and w/o attr group="A"
+        </div>
+      </magnet-block>
+      
+      <!-- has larger attract distance -->
+      <magnet-block mg-group="A" mg-attractDistance="25">
+        <div style="padding:1em; background: #cfc">
+          Inside and w/ attr group="A"
+        </div>
+      </magnet-block>
+    </magnet-group>
+      
+    <!-- only for attracting -->
+    <magnet-block mg-group="A" mg-attractDistance="15">
+      <div style="padding:1em; background: #ccf">
+        Outside but w/ attr group="A"
+      </div>
+    </magnet-block>
+  </body>
+</html>

@@ -22,9 +22,9 @@ npm install lf2com/magnet.js
 Then we can import/require `@lf2com/magnet.js` in your JS code
 
 ```js
-import Magnet from '@lf2com/magnet.js';
+import '@lf2com/magnet.js';
 // Or
-const Magnet = require('@lf2com/magnet.js');
+require('@lf2com/magnet.js');
 ```
 
 ### Browser
@@ -44,11 +44,11 @@ Download the [**JS**](https://github.com/lf2com/magnet.js/releases) or directly 
 
 ## How to Build
 
-We can directly run [build](#build) command at `magnet.js` path if gonna build `magnet.js` under `node_modules` path of out project
+We can directly run [build](#build) command at `magnet.js` path if gonna build `magnet.js` under `node_modules` path of out project.
 
 ### Git
 
-Clone repository from GitHub and install required modules
+Clone repository from GitHub and install required modules.
 
 ```sh
 git clone https://github.com/lf2com/magnet.js.git
@@ -58,7 +58,7 @@ npm install
 
 ### Build
 
-Run the following command and `magnet.min.js` would be built at the project path
+Run the following command and `magnet.min.js` would be built at the project path.
 
 ```sh
 npm run build
@@ -66,36 +66,55 @@ npm run build
 
 ## Usage
 
-Magnet.js departs 2 modules: [`<manget-block>`](#magnet-block) and [`<magnet-group>`](#magnet-group)
+There are 2 HTML elements declared in Magnet.js: [`<manget-block>`](#magnet-block) and [`<magnet-group>`](#magnet-group).
 
 ### Magnet Block
 
-`<magnet-block>` is designed to be a DOM for dragging and attracting each other
-
-
+`<magnet-block>` is a DOM for dragging and being attracted by other `<manget-block>`.
 
 ```html
 <!-- simple magnet block -->
-<magnet-block group="A" attractDistance="10">
-  <div style="padding:1em; background:#fcc">
+<magnet-block mg-attractDistance="10">
+  <div style="padding:1em; background: #fcc;">
     Hello Magnet.js
   </div>
 </magnet-block>
 
 <!-- has larger attract distance -->
-<magnet-block group="A" attractDistance="25">
-  <div style="padding:1em; background:#cfc">
-    Larger attraction
+<magnet-block mg-attractDistance="25">
+  <div style="padding:1em; background: #cfc;">
+    Here is a larger magnet
   </div>
 </magnet-block>
 
 <!-- only for attracting -->
-<magnet-block group="A" unmovable>
-  <div style="padding:1em; background:#ccf">
+<magnet-block mg-unmovable>
+  <div style="padding:1em; background: #ccf;">
     You cannot drag me
   </div>
 </magnet-block>
 ```
+
+[demo](./demo/hello-magnet-block.html)
+
+### Magnet Group
+
+`<magnet-group>` is a DOM that manages all the `<manget-block>`s inside it. Once a `<magnet-block>` is without an attibute of magnet options, it would reference to the nearest parent `<magnet-group>` that has the target attribute.
+
+
+TODO:
+  * blocks would break parent by attracting even defined cross prevention
+
+
+### Attributes
+
+
+
+
+
+
+
+
 
 ### Create Magnet Group
 

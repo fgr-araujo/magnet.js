@@ -16,11 +16,28 @@ const DEFAULT_VALUE = {
 }
 
 
+const template = document.createElement('template');
+
+template.innerHTML = `
+<style>
+  :host {
+    position: relative;
+    display: inline-block;
+  }
+</style>
+<slot>
+</slot>
+`;
 class MagnetBase extends HTMLElement {
   constructor() {
     super();
+
+    this.attachShadow({
+      mode: 'open',
+    });
+    this.shadowRoot.appendChild(template.content.cloneNode(true));
   }
-  
+
   /**
    * Disabled
    * 
