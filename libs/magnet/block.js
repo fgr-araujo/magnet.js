@@ -151,12 +151,13 @@ class Magnet extends MagnetGroup {
     const selectorGroup = isstr(group)
       ?`[${PROP.ATTRIBUTE.GROUP}="${group}"]`
       :'';
-    const selectorDisabled = `:not([${PROP.ATTRIBUTE.DISTABLED}])`;
-    const selectorAttractable = `:not([${PROP.ATTRIBUTE.UNATTRACTABLE}])`;
-    const selector = `${selectorGroup}${selectorDisabled}${selectorAttractable}`;
+    const selectorNotDisabled = `:not([${PROP.ATTRIBUTE.DISTABLED}])`;
+    const selectorNotUnattractable = `:not([${PROP.ATTRIBUTE.UNATTRACTABLE}])`;
+    const selector = `${selectorGroup}${selectorNotDisabled}${selectorNotUnattractable}`;
+    const magnetSelector = `${Magnet.nodeName}${selector}`;
 
-    return toarray(document.querySelectorAll(`${Magnet.nodeName}${selector}`) || [])
-      .concat(toarray(document.querySelectorAll(`${MagnetGroup.nodeName}${selector} ${Magnet.nodeName}`) || []))
+    return toarray(document.querySelectorAll(magnetSelector) || [])
+      .concat(toarray(document.querySelectorAll(`${MagnetGroup.nodeName}${selector} ${magnetSelector}`) || []))
       .filter((dom, domIndex, doms) => {
         if (dom === this) {
           return false;
