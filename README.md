@@ -102,10 +102,6 @@ There are 2 HTML elements declared in Magnet.js: [`<manget-block>`](#magnet-bloc
 `<magnet-group>` is a DOM that manages all the `<manget-block>`s inside it. Once a `<magnet-block>` is without an attibute of magnet options, it would reference to the nearest parent `<magnet-group>` that has the target attribute.
 
 
-TODO:
-  * blocks would break parent by attracting even defined cross prevention
-
-
 ### Attributes
 
 

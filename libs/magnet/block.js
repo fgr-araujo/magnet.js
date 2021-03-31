@@ -299,24 +299,73 @@ function isInBiasRange(bias, sourceL, sourceR, targetL, targetR) {
 function judgeTargetDistance({ value }, alignment, judgePack) {
   const {
     attractDistance,
-    alignToOuterline,
   } = this;
 
+  // check if source is too far to be attracted
   if (value > attractDistance) {
     return false;
-  } else if (alignToOuterline) {
-    return true;
   }
 
+  const {
+    alignToOuterline,
+    crossPreventParent,
+  } = this;
   const {
     source: {
       rectangle: sourceRect,
     },
+  } = judgePack;
+
+  if (crossPreventParent) {
+    const {
+      parent: {
+        rectangle: parentRect,
+      },
+    } = this;
+
+    switch (alignment) {
+      case Magnet.ALIGNMENT.topToTop:
+      case Magnet.ALIGNMENT.topToBottom:
+        if (value > Math.abs(parentRect.top - sourceRect.top)) {
+          return false;
+        }
+        break;
+
+      case Magnet.ALIGNMENT.rightToRight:
+      case Magnet.ALIGNMENT.rightToLeft:
+        if (value > Math.abs(parentRect.right - sourceRect.right)) {
+          return false;
+        }
+        break;
+
+      case Magnet.ALIGNMENT.bottomToTop:
+      case Magnet.ALIGNMENT.bottomToBottom:
+        if (value > Math.abs(parentRect.bottom - sourceRect.bottom)) {
+          return false;
+        }
+        break;
+
+      case Magnet.ALIGNMENT.leftToLeft:
+      case Magnet.ALIGNMENT.leftToRight:
+        if (value > Math.abs(parentRect.left - sourceRect.left)) {
+          return false;
+        }
+        break;
+    }
+  }
+  
+  // check if source is attracted to outerline of target
+  if (alignToOuterline) {
+    return true;
+  }
+
+  const {
     target: {
       rectangle: targetRect,
     },
   } = judgePack;
 
+  // check if source is attracted on edge of target
   switch (alignment) {
     default:
       return true;
@@ -483,12 +532,22 @@ function dragStartListener(event) {
   const alignToParent = this.alignToParent;
   const alignToOuterline = alignTo.includes(Magnet.ALIGN_TO.outerline);
   const crossPrevent = this.crossPrevent;
+  const crossPreventParent = crossPrevent.includes(Magnet.CROSS_PREVENT.parent);
   const attractDistance = this.attractDistance;
   const alignments = getAlignmentsFromAlignTo(alignTo);
   const parentAlignments = getAlignmentsFromAlignTo(alignToParent);
-  const onJudgeTargetDistance = judgeTargetDistance.bind({ attractDistance, alignToOuterline });
+  const parent = packRect(this.parentElement);
+  const onJudgeTargetDistance = judgeTargetDistance.bind({
+    attractDistance,
+    alignToOuterline,
+    crossPrevent,
+    crossPreventParent,
+    parent,
+  });
   const onJudgeTargetAttraction = judgeTargetAttraction;
-  const onJudgeParentDistance = judgeParentDistance.bind({ attractDistance });
+  const onJudgeParentDistance = judgeParentDistance.bind({
+    attractDistance,
+  });
   const onJudgeParentAttraction = judgeParentAttraction;
   const pack = {
     lastAttraction: null,
@@ -506,9 +565,9 @@ function dragStartListener(event) {
     alignments,
     parentAlignments,
     crossPrevent,
-    crossPreventParent: crossPrevent.includes(Magnet.CROSS_PREVENT.parent),
+    crossPreventParent,
     // crossPreventTarget: crossPrevent.includes(Magnet.CROSS_PREVENT.target), // yet to support
-    parent: packRect(this.parentElement),
+    parent,
     optionsForTargetDistances: {
       alignments,
       absDistance: true,
