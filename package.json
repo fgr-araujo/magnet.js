@@ -10,7 +10,8 @@
     "jquery-build": "browserify jquery-plugin.js -t [ babelify --presets [ es2015 stage-0 ] ] | uglifyjs -cm > jquery-magnet.min.js",
     "all-build-debug": "npm run build-debug & npm run jquery-build-debug",
     "all-build": "npm run build & npm run jquery-build",
-    "dev": "webpack serve --mode development --progress"
+    "dev": "webpack serve --mode development --progress",
+    "lint": "eslint **/*.js"
   },
   "author": "Wan Wan",
   "repository": {
@@ -36,6 +37,9 @@
     "babel-preset-stage-0": "^6.24.1",
     "babelify": "^10.0.0",
     "browserify": "^16.5.0",
+    "eslint": "^7.23.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.22.1",
     "html-webpack-plugin": "^4.5.1",
     "jest": "^26.6.3",
     "sassify": "^4.0.1",
