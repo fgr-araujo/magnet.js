@@ -1,5 +1,5 @@
 import {
-  isset, isnull, isnum, isstr, tonum, objMap, toarray,
+  isset, isnum, isstr, tonum, objMap, toarray,
 } from '../stdlib';
 
 // prepend prefix for attribute name
@@ -158,13 +158,24 @@ export default class Base extends HTMLElement {
   /**
    * Get attribute value
    *
+   * If attribute is not defined, look forward to the nearest group
+   *
    * @param {string} attrName
    * @returns {string?}
    */
   traceAttributeValue(attrName) {
-    const val = this.getAttribute(attrName);
+    const val = super.traceAttributeValue(attrName);
 
-    return isnull(val) ? val : undefined;
+    if (isset(val)) {
+      return val;
+    }
+
+    const { groupNode } = this;
+
+    return (groupNode
+      ? groupNode.traceAttributeValue(attrName)
+      : undefined
+    );
   }
 
   /**
@@ -227,6 +238,31 @@ export default class Base extends HTMLElement {
 
   get group() {
     return this.traceAttributeValue(ATTR_GROUP);
+  }
+
+  /**
+   * Group node
+   *
+   * Point to the nearest group node if exists
+   */
+  set groupNode(_) {
+    // unable to assign
+
+    return this;
+  }
+
+  get groupNode() {
+    let parent = this.parentElement;
+
+    while (parent) {
+      if (parent instanceof Base) {
+        return parent;
+      }
+
+      parent = parent.parentElement;
+    }
+
+    return undefined;
   }
 
   /**
