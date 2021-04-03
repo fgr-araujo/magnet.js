@@ -1,258 +1,339 @@
-'use strict';
-
 import {
-  isset, tonum, isstr,
-  objMap, objValues,
+  isset, isnull, isnum, isstr, tonum, objMap, toarray,
 } from '../stdlib';
-import PROP from './prop';
 
+// prepend prefix for attribute name
+export const attrPrefix = (str) => `mg-${str}`;
 
-const SYMBOL_SPLIT = /[|;,\s]/;
-const DEFAULT_VALUE = {
-  get attractDistance() { return 0; },
-  get alignTo() { return objValues(MagnetBase.ALIGN_TO); },
-  get alignToParent() { return []; },
-  get crossPrevent() { return []; },
-}
+// attributes
+const ATTR_DISABLED = attrPrefix('disabled');
+const ATTR_GROUP = attrPrefix('group');
+const ATTR_UNATTRABLE = attrPrefix('unattractable');
+const ATTR_UNMOVABLE = attrPrefix('unmovable');
+const ATTR_ATTRACT_DISTANCE = attrPrefix('attract-distance');
+const ATTR_ALIGN_TO = attrPrefix('align-to');
+const ATTR_ALIGN_TO_PARENT = attrPrefix('align-to-parent');
+const ATTR_CROSS_PREVENT = attrPrefix('cross-prevent');
 
+// values of alignment
+const ALIGNMENT_TOP_TO_TOP = 'topToTop';
+const ALIGNMENT_TOP_TO_BOTTOM = 'topToBottom';
+const ALIGNMENT_RIGHT_TO_RIGHT = 'rightToRight';
+const ALIGNMENT_RIGHT_TO_LEFT = 'rightToLeft';
+const ALIGNMENT_BOTTOM_TO_TOP = 'bottomToTop';
+const ALIGNMENT_BOTTOM_TO_BOTTOM = 'bottomToBottom';
+const ALIGNMENT_LEFT_TO_RIGHT = 'leftToRight';
+const ALIGNMENT_LEFT_TO_LEFT = 'leftToLeft';
+const ALIGNMENT_X_CENTER_TO_X_CENTER = 'xCenterToXCenter';
+const ALIGNMENT_Y_CENTER_TO_Y_CENTER = 'yCenterToYCenter';
 
-// const template = document.createElement('template');
+// values of align to
+const ALIGN_TO_OUTER = 'outer';
+const ALIGN_TO_INNER = 'inner';
+const ALIGN_TO_CENTER = 'center';
+const ALIGN_TO_OUTERLINE = 'outerline';
 
-// template.innerHTML = `
-// <style>
-//   :host {
-//     position: relative;
-//     display: inline-block;
-//   }
-// </style>
-// <slot>
-// </slot>
-// `;
-class MagnetBase extends HTMLElement {
-  // constructor() {
-  //   super();
+// values of cross prevent
+const CROSS_PREVENT_PARENT = 'parent';
 
-  //   this.attachShadow({
-  //     mode: 'open',
-  //   });
-  //   this.shadowRoot.appendChild(template.content.cloneNode(true));
-  // }
+// default values
+const DEF_ATTRACT_DISTANCE = 0;
+const DEF_ALIGN_TO = [
+  ALIGN_TO_OUTER,
+  ALIGN_TO_INNER,
+  ALIGN_TO_CENTER,
+  ALIGN_TO_OUTERLINE,
+];
+const DEF_ALIGN_TO_PARENT = [
+  ALIGN_TO_INNER,
+  ALIGN_TO_CENTER,
+];
+const DEF_CROSS_PREVENT = [
+  CROSS_PREVENT_PARENT,
+];
 
-  // /**
-  //  * Disabled
-  //  * 
-  //  * Set to be no action for dragging and attraction
-  //  */
-  // get disabled() {
-  //   return isstr(this.traceMagnetAttributeValue(PROP.ATTRIBUTE.DISTABLED));
-  // }
-  // set disabled(disabled) {
-  //   if (disabled) {
-  //     this.setAttribute(PROP.ATTRIBUTE.DISTABLED, '');
-  //   } else {
-  //     this.removeAttribute(PROP.ATTRIBUTE.DISTABLED);
-  //   }
-  // }
+/**
+ * Standardize property values for class static member
+ *
+ * @param {object} props
+ * @returns {object}
+ */
+const stdPropValues = (props) => Object.defineProperties({}, objMap(props, (value) => ({
+  value,
+  enumerable: true,
+})));
 
-  // /**
-  //  * Group
-  //  * 
-  //  * By default only attractable to magnets with the same group
-  //  * If not assign any group, it would attract to all magnets 
-  //  * but not attractable for grouped magnets
-  //  */
-  // get group() {
-  //   return this.traceMagnetAttributeValue(PROP.ATTRIBUTE.GROUP);
-  // }
-  // set group(group) {
-  //   this.setAttribute(PROP.ATTRIBUTE.GROUP, group);
-  // }
+/**
+ * Standardize multiple values assigned to attribute value
+ *
+ * @param {string|array} val
+ * @param {object} ref
+ * @returns {string}
+ */
+const REGEXP_ATTR_SPLIT = /[|;,\s]/;
+const stdMultiValToAttrVal = (val, ref) => (isstr(val)
+  ? val.split(REGEXP_ATTR_SPLIT)
+  : toarray(val)
+)
+  .filter((member) => member in ref)
+  .join('|');
 
-  // /**
-  //  * Unattractable
-  //  * 
-  //  * Set to be no attraction as source or target
-  //  */
-  // get unattractable() {
-  //   return isstr(this.traceMagnetAttributeValue(PROP.ATTRIBUTE.UNATTRACTABLE));
-  // }
-  // set unattractable(unattractable) {
-  //   if (unattractable) {
-  //     this.setAttribute(PROP.ATTRIBUTE.UNATTRACTABLE, '');
-  //   } else {
-  //     this.removeAttribute(PROP.ATTRIBUTE.UNATTRACTABLE);
-  //   }
-  // }
+/**
+ * Standardize attribute value to multiple value
+ *
+ * @param {string} val
+ * @param {object} ref
+ * @param {array} def
+ * @returns {array}
+ */
+const stdAttrValToMultiVal = (val, ref, def) => (isstr(val)
+  ? val
+    .split(REGEXP_ATTR_SPLIT)
+    .filter((member) => member in ref)
+  : def
+);
 
-  // /**
-  //  * Unmovable
-  //  * 
-  //  * Set to be not able to be dragged
-  //  */
-  // get unmovable() {
-  //   return isstr(this.traceMagnetAttributeValue(PROP.ATTRIBUTE.UNMOVABLE));
-  // }
-  // set unmovable(unmovable) {
-  //   if (unmovable) {
-  //     this.setAttribute(PROP.ATTRIBUTE.UNMOVABLE, '');
-  //   } else {
-  //     this.removeAttribute(PROP.ATTRIBUTE.UNMOVABLE);
-  //   }
-  // }
-
-  // /**
-  //  * Attract distance
-  //  * 
-  //  * Unit: px
-  //  */
-  // get attractDistance() {
-  //   return tonum(this.traceMagnetAttributeValue(PROP.ATTRIBUTE.ATTRACT_DISTANCE) || DEFAULT_VALUE.attractDistance);
-  // }
-  // set attractDistance(distance) {
-  //   if (isnum(distance)) {
-  //     this.setAttribute(PROP.ATTRIBUTE.ATTRACT_DISTANCE, distance);
-  //   }
-  // }
-
-  // /**
-  //  * Alignment
-  //  */
-  // static ALIGNMENT = Object.defineProperties({}, objMap({
-  //   topToTop: PROP.ALIGNMENT.ALIGN_TOP_TO_TOP,
-  //   topToBottom: PROP.ALIGNMENT.ALIGN_TOP_TO_BOTTOM,
-  //   rightToRight: PROP.ALIGNMENT.ALIGN_RIGHT_TO_RIGHT,
-  //   rightToLeft: PROP.ALIGNMENT.ALIGN_RIGHT_TO_LEFT,
-  //   bottomToBottom: PROP.ALIGNMENT.ALIGN_BOTTOM_TO_BOTTOM,
-  //   bottomToTop: PROP.ALIGNMENT.ALIGN_BOTTOM_TO_TOP,
-  //   leftToLeft: PROP.ALIGNMENT.ALIGN_LEFT_TO_LEFT,
-  //   leftToRight: PROP.ALIGNMENT.ALIGN_LEFT_TO_RIGHT,
-  //   xCenterToXCenter: PROP.ALIGNMENT.ALIGN_X_CENTER_TO_X_CENTER,
-  //   yCenterToYCenter: PROP.ALIGNMENT.ALIGN_Y_CENTER_TO_Y_CENTER,
-  // }, (value) => ({
-  //   value,
-  //   enumerable: true,
-  // })))
-
-  // /**
-  //  * Align to
-  //  */
-  // static ALIGN_TO = Object.defineProperties({}, objMap({
-  //   outerline: 'outerline', // align outside of source to extended line of outer/inner
-  //   outer: 'outer',         // align outside of source to that of target
-  //   inner: 'inner',         // align outside of source to inside of target
-  //   center: 'center',       // align x/y center of source to that of target
-  // }, (value) => ({
-  //   value,
-  //   enumerable: true,
-  // })))
-  // get alignTo() {
-  //   const alignToValue = this.traceMagnetAttributeValue(PROP.ATTRIBUTE.ALIGN_TO);
-
-  //   return isstr(alignToValue)
-  //     ?alignToValue
-  //       .split(SYMBOL_SPLIT)
-  //       .filter((alignTo) => alignTo in MagnetBase.ALIGN_TO)
-  //     :DEFAULT_VALUE.alignTo;
-  // }
-  // set alignTo(alignTo) {
-  //   if (isstr(alignTo)) {
-  //     this.setAttribute(PROP.ATTRIBUTE.ALIGN_TO, alignTo
-  //       .split(SYMBOL_SPLIT)
-  //       .filter((alignTo) => alignTo in MagnetBase.ALIGN_TO)
-  //       .join('|')
-  //     );
-  //   } else {
-  //     this.removeAttribute(PROP.ATTRIBUTE.ALIGN_TO);
-  //   }
-  // }
-
-  // static ALIGN_TO_PARENT = Object.defineProperties({}, objMap({
-  //   inner: MagnetBase.ALIGN_TO.inner,
-  //   center: MagnetBase.ALIGN_TO.center,
-  // }, (value) => ({
-  //   value,
-  //   enumerable: true,
-  // })))
-  // get alignToParent() {
-  //   const alignToParentValue = this.traceMagnetAttributeValue(PROP.ATTRIBUTE.ALIGN_TO_PARENT);
-
-  //   return isstr(alignToParentValue)
-  //     ?alignToParentValue
-  //       .split(SYMBOL_SPLIT)
-  //       .filter((alignToParent) => alignToParent in MagnetBase.ALIGN_TO_PARENT)
-  //     :DEFAULT_VALUE.alignToParent;
-  // }
-  // set alignToParent(alignToParent) {
-  //   if (isset(alignToParent)) {
-  //     this.setAttribute(PROP.ATTRIBUTE.ALIGN_TO_PARENT, alignToParent
-  //       .split(SYMBOL_SPLIT)
-  //       .filter((alignToParent) => alignToParent in MagnetBase.ALIGN_TO_PARENT)
-  //       .join('|')
-  //     );
-  //   } else {
-  //     this.removeAttribute(PROP.ATTRIBUTE.ALIGN_TO_PARENT);
-  //   }
-  // }
-
-  // /**
-  //  * Prevent cross
-  //  */
-  // static CROSS_PREVENT = Object.defineProperties({}, objMap({
-  //   parent: 'parent',
-  //   // target: 'target',  // yet to support
-  // }, (value) => ({
-  //   value,
-  //   enumerable: true,
-  // })))
-  get crossPrevent() {
-    const crossPreventValue = this.traceMagnetAttributeValue(PROP.ATTRIBUTE.CROSS_PREVENT);
-
-    return isstr(crossPreventValue)
-      ?crossPreventValue
-        .split(SYMBOL_SPLIT)
-        .filter((crossPrevent) => crossPrevent in MagnetBase.CROSS_PREVENT)
-      :DEFAULT_VALUE.crossPrevent;
+// template HTML for <magnet-*>
+const template = document.createElement('template');
+template.innerHTML = `
+<style>
+  :host {
+    position: relative;
+    display: inline-block;
   }
-  set crossPrevent(crossPrevent) {
-    if (isstr(alignment)) {
-      this.setAttribute(PROP.ATTRIBUTE.CROSS_PREVENT, crossPrevent
-        .split(SYMBOL_SPLIT)
-        .filter((crossPrevent) => crossPrevent in MagnetBase.CROSS_PREVENT)
-        .join('|')
-      );
+</style>
+<slot>
+</slot>
+`;
+
+export default class Base extends HTMLElement {
+  constructor() {
+    super();
+
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.appendChild(template.content.cloneNode(true));
+  }
+
+  /**
+   * Available alignments
+   */
+  static ALIGNMENT = stdPropValues({
+    topToTop: ALIGNMENT_TOP_TO_TOP,
+    topToBottom: ALIGNMENT_TOP_TO_BOTTOM,
+    rightToRight: ALIGNMENT_RIGHT_TO_RIGHT,
+    rightToLeft: ALIGNMENT_RIGHT_TO_LEFT,
+    bottomToTop: ALIGNMENT_BOTTOM_TO_TOP,
+    bottomToBottom: ALIGNMENT_BOTTOM_TO_BOTTOM,
+    leftToRight: ALIGNMENT_LEFT_TO_RIGHT,
+    leftToLeft: ALIGNMENT_LEFT_TO_LEFT,
+    xCenterToXCenter: ALIGNMENT_X_CENTER_TO_X_CENTER,
+    yCenterToYCenter: ALIGNMENT_Y_CENTER_TO_Y_CENTER,
+  })
+
+  /**
+   * Available types to sense to align magnets
+   */
+  static ALIGN_TO = stdPropValues({
+    outer: ALIGN_TO_OUTER,
+    inner: ALIGN_TO_INNER,
+    center: ALIGN_TO_CENTER,
+    outerline: ALIGN_TO_OUTERLINE,
+  })
+
+  /**
+   * Available types to sense to align parent
+   */
+  static ALIGN_TO_PARENT = stdPropValues({
+    inner: ALIGN_TO_INNER,
+    center: ALIGN_TO_CENTER,
+  })
+
+  /**
+   * Available types to prevent crossing
+   */
+  static CROSS_PREVENT = stdPropValues({
+    parent: CROSS_PREVENT_PARENT,
+  })
+
+  /**
+   * Get attribute value
+   *
+   * @param {string} attrName
+   * @returns {string?}
+   */
+  traceAttributeValue(attrName) {
+    const val = this.getAttribute(attrName);
+
+    return isnull(val) ? val : undefined;
+  }
+
+  /**
+   * Trigger custom event
+   *
+   * @param {string} evtName
+   * @param {object?} options
+   * @member {any?} detail
+   * @member {boolean?} composed
+   * @member {boolean?} cancelable
+   * @member {boolean?} bubbles
+   * @returns {boolean} is event canceled
+   */
+  triggerCustomEvent(evtName, {
+    detail,
+    composed = false,
+    cancelable = true,
+    bubbles = false,
+  } = {}) {
+    const evt = new CustomEvent(evtName, {
+      detail,
+      composed,
+      cancelable,
+      bubbles,
+    });
+
+    return !this.dispatchEvent(evt); // true if canceled
+  }
+
+  /**
+   * Disabled
+   *
+   * Set to be both unattractable and unmovable
+   */
+  set disabled(val) {
+    if (val) {
+      this.setAttribute(ATTR_DISABLED, '');
     } else {
-      this.removeAttribute(PROP.ATTRIBUTE.CROSS_PREVENT);
+      this.removeAttribute(ATTR_DISABLED);
     }
+
+    return this;
   }
 
-  // /**
-  //  * Trigger custom event
-  //  * 
-  //  * @return boolean of cancelled
-  //  */
-  // triggerCustomEvent(eventName, {
-  //   detail,
-  //   composed = false,
-  //   cancelable = true,
-  //   bubbles = false,
-  // } = {}) {
-  //   const event = new CustomEvent(eventName, {
-  //     detail,
-  //     composed,
-  //     cancelable,
-  //     bubbles,
-  //   });
+  get disabled() {
+    return isstr(this.traceAttributeValue(ATTR_DISABLED));
+  }
 
-  //   return !this.dispatchEvent(event); // true if cancelled
-  // }
+  /**
+   * Group
+   *
+   * Be attractable to magnets with the same group
+   * If no group, would be seen as non-group magnets
+   */
+  set group(val) {
+    this.setAttribute(ATTR_GROUP, val);
 
-  // /**
-  //  * Get attribute value
-  //  */
-  // traceMagnetAttributeValue(attributeName) {
-  //   return this.getAttribute(attributeName);
-  // }
+    return this;
+  }
+
+  get group() {
+    return this.traceAttributeValue(ATTR_GROUP);
+  }
+
+  /**
+   * Unattractable
+   *
+   * Set to be no attraction for magnets
+   */
+  set unattractable(val) {
+    if (val) {
+      this.setAttribute(ATTR_UNATTRABLE, '');
+    } else {
+      this.removeAttribute(ATTR_UNATTRABLE);
+    }
+
+    return this;
+  }
+
+  get unattractable() {
+    return isstr(this.traceAttributeValue(ATTR_UNATTRABLE));
+  }
+
+  /**
+   * Unmovable
+   *
+   * Set to be unable for dragging
+   */
+  set unmovable(val) {
+    if (val) {
+      this.setAttribute(ATTR_UNMOVABLE, '');
+    } else {
+      this.removeAttribute(ATTR_UNMOVABLE);
+    }
+
+    return this;
+  }
+
+  get unmovable() {
+    return isstr(this.traceAttributeValue(ATTR_UNMOVABLE));
+  }
+
+  /**
+   * Attract distance (unit: px)
+   *
+   * Distance to sense magnets
+   */
+  set attractDistance(val) {
+    if (isnum(val)) {
+      this.setAttribute(ATTR_ATTRACT_DISTANCE, val);
+    }
+
+    return this;
+  }
+
+  get attractDistance() {
+    const val = this.traceAttributeValue(ATTR_ATTRACT_DISTANCE);
+
+    return tonum(isset(val) ? val : DEF_ATTRACT_DISTANCE);
+  }
+
+  /**
+   * Types for sensing to align magnets
+   */
+  set alignTo(val) {
+    const attrVal = stdMultiValToAttrVal(val, Base.ALIGN_TO);
+
+    this.setAttribute(ATTR_ALIGN_TO, attrVal);
+
+    return this;
+  }
+
+  get alignTo() {
+    const val = this.traceAttributeValue(ATTR_ALIGN_TO);
+
+    return stdAttrValToMultiVal(val, Base.ALIGN_TO, DEF_ALIGN_TO);
+  }
+
+  /**
+   * Types for sensing to align parent
+   */
+  set alignToParent(val) {
+    const attrVal = stdMultiValToAttrVal(val, Base.ALIGN_TO_PARENT);
+
+    this.setAttribute(ATTR_ALIGN_TO_PARENT, attrVal);
+
+    return this;
+  }
+
+  get alignToParent() {
+    const val = this.traceAttributeValue(ATTR_ALIGN_TO_PARENT);
+
+    return stdAttrValToMultiVal(val, Base.ALIGN_TO_PARENT, DEF_ALIGN_TO_PARENT);
+  }
+
+  /**
+   * Types to prevent crossing
+   */
+  set crossPrevent(val) {
+    const attrVal = stdMultiValToAttrVal(val, Base.CROSS_PREVENT);
+
+    this.setAttribute(ATTR_CROSS_PREVENT, attrVal);
+
+    return this;
+  }
+
+  get crossPrevent() {
+    const val = this.traceAttributeValue(ATTR_CROSS_PREVENT);
+
+    return stdAttrValToMultiVal(val, Base.CROSS_PREVENT, DEF_CROSS_PREVENT);
+  }
 }
-
-
-export default MagnetBase;
