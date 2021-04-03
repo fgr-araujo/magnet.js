@@ -7,6 +7,14 @@
 export const isset = (src) => src !== undefined;
 
 /**
+ * Check if {src} is null
+ *
+ * @param {any} src
+ * @returns {boolean}
+ */
+export const isnull = (src) => src === null;
+
+/**
  * Return {a} if it passed {validator}, or return {b}
  *
  * @param {any} a
