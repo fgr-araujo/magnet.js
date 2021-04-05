@@ -1,23 +1,49 @@
+/* eslint-disable no-use-before-define */
+
 import {
   isset, getStyle, tonum,
 } from '../stdlib';
-import Rect from './rect';
-import Pack from './pack';
+import Rect, { RectableObj } from './Rect';
+
+const rectMap = new WeakMap();
+const rawMap = new WeakMap();
+
+export type RectableSource = RectableObj | Rect | Pack | Element | Window | Document;
+
+export class Pack {
+  constructor(src: RectableSource) {
+    if (Pack.isPack(src)) {
+      rectMap.set(this, src.rectangle);
+      rawMap.set(this, src.raw);
+    } else {
+      rectMap.set(this, toRect(src));
+      rawMap.set(this, src);
+    }
+  }
+
+  /**
+   * Check if {src} is pack
+   */
+  static isPack(src: unknown): src is Pack {
+    return src instanceof this;
+  }
+
+  get raw(): unknown { return rawMap.get(this); }
+
+  get rectangle(): Rect { return rectMap.get(this); }
+}
 
 /**
  * Convert {src} to rectangle
- *
- * @param {any} src
- * @returns {Rect}
  */
-export function toRect(src) {
+export function toRect(src: RectableSource): Rect {
   if (!isset(src)) {
     // {src} is undefined
     throw new ReferenceError('Not assign source');
-  } else if (src instanceof Rect) {
+  } else if (Rect.isRect(src)) {
     // {src} is already a valid rectangle
     return src;
-  } else if (src instanceof Pack) {
+  } else if (Pack.isPack(src)) {
     // {src} includes a valid rectangle
     return src.rectangle;
   } else if (src instanceof Window || src instanceof Document) {
@@ -25,6 +51,8 @@ export function toRect(src) {
 
     const width = window.innerWidth;
     const height = window.innerHeight;
+
+    src as Window|Document;
 
     return new Rect({
       x: 0,
@@ -54,6 +82,8 @@ export function toRect(src) {
     const width = src.clientWidth - borderRight - borderLeft;
     const height = src.clientHeight - borderTop - borderBottom;
 
+    src as Element;
+
     if (src === document.body) {
       // {src} is <body>
       return new Rect({
@@ -80,16 +110,13 @@ export function toRect(src) {
     });
   }
 
-  return new Rect(src);
+  return new Rect(src as RectableObj);
 }
 
 /**
  * Pack {src}
- *
- * @param {any} src
- * @returns {Pack}
  */
-export function toPack(src) {
+export function toPack(src: RectableSource): Pack {
   return (Pack.isPack(src)
     ? src
     : new Pack(src)

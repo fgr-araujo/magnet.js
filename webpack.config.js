@@ -12,7 +12,7 @@ module.exports = {
     path: path.resolve(__dirname, BUILD_PATH),
   },
   resolve: {
-    extensions: ['.js'],
+    extensions: ['.js', '.ts'],
   },
   module: {
     rules: [
@@ -31,6 +31,10 @@ module.exports = {
             ],
           },
         },
+      },
+      {
+        test: /\.ts$/i,
+        loader: 'ts-loader',
       },
     ],
   },

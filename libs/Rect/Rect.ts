@@ -4,15 +4,12 @@ import {
 
 /**
  * Check if {a} and {b} is almost to be the same nubmer
- *
- * @param {number} a
- * @param {number} b
- * @returns {boolean}
  */
 const BIAS = 0.0000000001;
-const isInBias = (a, b) => Math.abs(a - b) <= BIAS;
+function isInBias(a: number, b: number): boolean {
+  return Math.abs(a - b) <= BIAS;
+}
 
-// weak map for info of rectangle
 const topMap = new WeakMap();
 const rightMap = new WeakMap();
 const bottomMap = new WeakMap();
@@ -20,20 +17,36 @@ const leftMap = new WeakMap();
 const widthMap = new WeakMap();
 const heightMap = new WeakMap();
 
+export type RectableObj = Record<string, unknown> & {
+  x?: number;
+  y?: number;
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+  width?: number;
+  height?: number;
+};
+
 export default class Rect {
-  constructor(src) {
+  constructor(src: RectableObj) {
+    if (Rect.isRect(src)) {
+      // use the same reference
+      return src;
+    }
+
     const {
       x, y,
       top, right, bottom, left,
       width, height,
     } = src;
 
-    let finalTop;
-    let finalRight;
-    let finalBottom;
-    let finalLeft;
-    let finalWidth;
-    let finalHeight;
+    let finalTop: number;
+    let finalRight: number;
+    let finalBottom: number;
+    let finalLeft: number;
+    let finalWidth: number;
+    let finalHeight: number;
 
     // check horzontal
     if (isset(right)) {
@@ -171,25 +184,26 @@ export default class Rect {
     heightMap.set(this, finalHeight);
   }
 
-  get top() { return topMap.get(this); }
+  static isRect(src: unknown): src is Rect {
+    return src instanceof this;
+  }
 
-  get right() { return rightMap.get(this); }
+  get top(): number { return topMap.get(this); }
 
-  get bottom() { return bottomMap.get(this); }
+  get right(): number { return rightMap.get(this); }
 
-  get left() { return leftMap.get(this); }
+  get bottom(): number { return bottomMap.get(this); }
 
-  get x() { return leftMap.get(this); }
+  get left(): number { return leftMap.get(this); }
 
-  get y() { return topMap.get(this); }
+  get x(): number { return leftMap.get(this); }
+
+  get y(): number { return topMap.get(this); }
 
   /**
    * Move x|left and right by x
-   *
-   * @param {number} x
-   * @returns {Rect}
    */
-  offsetX(x = 0) {
+  offsetX(x: number|undefined = 0): Rect {
     if (!isnum(x)) {
       throw new TypeError(`Invalid x: ${x}`);
     }
@@ -202,11 +216,8 @@ export default class Rect {
 
   /**
    * Move y|top and bottom by y
-   *
-   * @param {number} y
-   * @returns {Rect}
    */
-  offsetY(y = 0) {
+  offsetY(y: number|undefined = 0): Rect {
     if (!isnum(y)) {
       throw new TypeError(`Invalid y: ${y}`);
     }
@@ -219,12 +230,8 @@ export default class Rect {
 
   /**
    * Move rectangle by x and y
-   *
-   * @param {number} x
-   * @param {number} y
-   * @returns {Rect}
    */
-  offset(x, y) {
+  offset(x?: number, y?: number): Rect {
     this.offsetX(x);
     this.offsetY(y);
 
@@ -233,11 +240,8 @@ export default class Rect {
 
   /**
    * Move x|left to the new x
-   *
-   * @param {number} x
-   * @returns {Rect}
    */
-  moveToX(x = this.left) {
+  moveToX(x: number|undefined = this.left): Rect {
     if (!isnum(x)) {
       throw new TypeError(`Invalid x: ${x}`);
     }
@@ -249,11 +253,8 @@ export default class Rect {
 
   /**
    * Move y|top to the new y
-   *
-   * @param {number} y
-   * @returns {Rect}
    */
-  moveToY(y = this.top) {
+  moveToY(y: number|undefined = this.top): Rect {
     if (!isnum(y)) {
       throw new TypeError(`Invalid y: ${y}`);
     }
@@ -265,12 +266,8 @@ export default class Rect {
 
   /**
    * Move rectangle to the new (x, y)
-   *
-   * @param {number} x
-   * @param {number} y
-   * @returns {Rect}
    */
-  moveTo(x, y) {
+  moveTo(x?: number, y?: number): Rect {
     this.moveToX(x);
     this.moveToY(y);
 
