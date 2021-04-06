@@ -7,7 +7,7 @@ export type MagnetConfig = {
 };
 
 export type MagnetHandler = (
-  src: HTMLElement,
+  this: Block,
   evt: MouseEvent | TouchEvent,
   cfg: MagnetConfig,
 ) => void;
@@ -15,29 +15,26 @@ export type MagnetHandler = (
 /**
  * Get clientX/clientY of event
  */
- type EventWithClientXY = {
-  clientX?: number;
-  clientY?: number;
-  touches?: Array<EventWithClientXY>;
-};
+export function getEvtClientXY(evt: MouseEvent|TouchEvent): Point {
+  if (evt instanceof MouseEvent) {
+    return new Point(evt.clientX, evt.clientY);
+  }
+  if (evt instanceof TouchEvent) {
+    const [touch] = evt.touches;
 
-export function getEvtClientXY({
-  clientX, clientY,
-  touches: [{
-    clientX: x = clientX,
-    clientY: y = clientY,
-  }] = [],
-}: EventWithClientXY): Point {
-  return new Point(x, y);
+    return new Point(touch.clientX, touch.clientY);
+  }
+
+  throw new ReferenceError(`Invalid event: ${evt}`);
 }
 
 /**
  * Add event listener to {src}
  */
 type EventListenerProps = (
-  src: Block,
+  src: Element | Window | Document,
   evtNames: string | Array<string>,
-  caller: () => unknown,
+  caller: (this: Block, evt: MouseEvent|TouchEvent) => unknown,
 ) => Block;
 
 export const addEventListener: EventListenerProps = function addEventListener(

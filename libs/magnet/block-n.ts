@@ -86,17 +86,17 @@ export default class Block extends Base {
 
       case Attributes.disabled:
         if (newVal) {
-          removeEventListener(this, EVENT_DRAGSTART, this.dragStartHandler);
+          removeEventListener(this, EVENT_DRAGSTART, this.handleMagnetStart);
         } else if (!this.unmovable) {
-          addEventListener(this, EVENT_DRAGSTART, this.dragStartHandler);
+          addEventListener(this, EVENT_DRAGSTART, this.handleMagnetStart);
         }
         break;
 
       case Attributes.unmovable:
         if (newVal) {
-          removeEventListener(this, EVENT_DRAGSTART, this.dragStartHandler);
+          removeEventListener(this, EVENT_DRAGSTART, this.handleMagnetStart);
         } else if (!this.disabled) {
-          addEventListener(this, EVENT_DRAGSTART, this.dragStartHandler);
+          addEventListener(this, EVENT_DRAGSTART, this.handleMagnetStart);
         }
         break;
     }
@@ -192,10 +192,21 @@ export default class Block extends Base {
     this.style.removeProperty('transform');
   }
 
+  handleMagnetDragStart(evt: MouseEvent|TouchEvent): boolean|undefined {
+    return true;
+  }
+  handleMagnetDragMove(evt: MouseEvent|TouchEvent): boolean|undefined {
+    return true;
+  }
+  handleMagnetDragEnd(evt: MouseEvent|TouchEvent): boolean|undefined {
+    return true;
+  }
+  handleMagnetAttracting() {}
+
   /**
    * Handler on start of dragging magnet
    */
-  handleMagnetStart(evt: MouseEvent | TouchEvent, magnetConfig: MagnetConfig): void {
+  handleMagnetStart(evt: MouseEvent | TouchEvent): void {
     const resultOfHandler = handleMagnetStart(this, evt, magnetConfig);
 
     if (isset(resultOfHandler)) {

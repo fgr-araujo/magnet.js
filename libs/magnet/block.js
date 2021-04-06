@@ -522,21 +522,21 @@ function genMagnetEventOptions(
  * Listener of touchstart/mousedown
  */
 function dragStartListener(event) {
-  const {
-    x: startX,
-    y: startY,
-  } = getEventClientXY(event);
-  const targets = this.getMagnetTargets()
-    .map((target) => packRect(target));
-  const alignTo = this.alignTo;
-  const alignToParent = this.alignToParent;
-  const alignToOuterline = alignTo.includes(Magnet.ALIGN_TO.outerline);
-  const crossPrevent = this.crossPrevent;
-  const crossPreventParent = crossPrevent.includes(Magnet.CROSS_PREVENT.parent);
-  const attractDistance = this.attractDistance;
-  const alignments = getAlignmentsFromAlignTo(alignTo);
-  const parentAlignments = getAlignmentsFromAlignTo(alignToParent);
-  const parent = packRect(this.parentElement);
+  // const {
+  //   x: startX,
+  //   y: startY,
+  // } = getEventClientXY(event);
+  // const targets = this.getMagnetTargets()
+  //   .map((target) => packRect(target));
+  // const alignTo = this.alignTo;
+  // const alignToParent = this.alignToParent;
+  // const alignToOuterline = alignTo.includes(Magnet.ALIGN_TO.outerline);
+  // const crossPrevent = this.crossPrevent;
+  // const crossPreventParent = crossPrevent.includes(Magnet.CROSS_PREVENT.parent);
+  // const attractDistance = this.attractDistance;
+  // const alignments = getAlignmentsFromAlignTo(alignTo);
+  // const parentAlignments = getAlignmentsFromAlignTo(alignToParent);
+  // const parent = packRect(this.parentElement);
   const onJudgeTargetDistance = judgeTargetDistance.bind({
     attractDistance,
     alignToOuterline,
@@ -551,23 +551,23 @@ function dragStartListener(event) {
   const onJudgeParentAttraction = judgeParentAttraction;
   const pack = {
     lastAttraction: null,
-    source: packRect(this),
-    targets,
+    // source: packRect(this),
+    // targets,
     startX,
     startY,
     lastOffsetX: tonum(this.style.getPropertyValue(PROP.STYLE.VAR_MAGNET_OFFSET_X) || 0),
     lastOffsetY: tonum(this.style.getPropertyValue(PROP.STYLE.VAR_MAGNET_OFFSET_Y) || 0),
-    unattractable: this.unattractable,
-    attractDistance,
-    alignTo,
-    alignToParent,
-    alignToOuterline,
-    alignments,
-    parentAlignments,
-    crossPrevent,
-    crossPreventParent,
+    // unattractable: this.unattractable,
+    // attractDistance,
+    // alignTo,
+    // alignToParent,
+    // alignToOuterline,
+    // alignments,
+    // parentAlignments,
+    // crossPrevent,
+    // crossPreventParent,
     // crossPreventTarget: crossPrevent.includes(Magnet.CROSS_PREVENT.target), // yet to support
-    parent,
+    // parent,
     optionsForTargetDistances: {
       alignments,
       absDistance: true,
@@ -580,36 +580,36 @@ function dragStartListener(event) {
       onJudgeDistance: onJudgeParentDistance,
       onJudgeAttraction: onJudgeParentAttraction,
     },
-  };
-  const options = {
-    detail: pack,
-  };
+  // };
+  // const options = {
+  //   detail: pack,
+  // };
 
-  if (!triggerMagnetEvent(this, Magnet.EVENT.start, options)) {
-    const self = this;
+  // if (!triggerMagnetEvent(this, Magnet.EVENT.start, options)) {
+  //   const self = this;
 
-    let passPack;
+  //   let passPack;
 
-    function onDragMove(event) {
-      if (!triggerMagnetEvent(self, Magnet.EVENT.move, options)) {
-        passPack = self.onMagnetDragMove(event, pack, passPack);
-      }
-    }
+  //   function onDragMove(event) {
+  //     if (!triggerMagnetEvent(self, Magnet.EVENT.move, options)) {
+  //       passPack = self.onMagnetDragMove(event, pack, passPack);
+  //     }
+  //   }
 
-    function onDragEnd(event) {
-      removeEventListener(document, EVENT.dragMove, onDragMove);
-      removeEventListener(document, EVENT.dragEnd, onDragEnd);
+  //   function onDragEnd(event) {
+  //     removeEventListener(document, EVENT.dragMove, onDragMove);
+  //     removeEventListener(document, EVENT.dragEnd, onDragEnd);
 
-      if (!triggerMagnetEvent(self, Magnet.EVENT.end, options)) {
-        passPack = self.onMagnetDragEnd(event, pack, passPack);
-      }
-    };
+  //     if (!triggerMagnetEvent(self, Magnet.EVENT.end, options)) {
+  //       passPack = self.onMagnetDragEnd(event, pack, passPack);
+  //     }
+  //   };
 
-    addEventListener(document, EVENT.dragMove, onDragMove);
-    addEventListener(document, EVENT.dragEnd, onDragEnd);
-    passPack = this.onMagnetDragStart(event, pack, passPack);
-  }
-}
+  //   addEventListener(document, EVENT.dragMove, onDragMove);
+  //   addEventListener(document, EVENT.dragEnd, onDragEnd);
+  //   passPack = this.onMagnetDragStart(event, pack, passPack);
+  // }
+// }
 
 // /**
 //  * Handler of magnet drag start

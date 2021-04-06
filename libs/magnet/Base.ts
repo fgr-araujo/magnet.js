@@ -182,7 +182,7 @@ export default class Base extends HTMLElement {
   /**
    * Get types of alignment of types of align to
    */
-  static getAlignmentsOfAlignTo(alignTo: Array<AlignTos> = []): Array<Alignments> {
+  static getAlignmentsOfAlignTo(alignTo: Array<AlignTos|AlignToParents> = []): Array<Alignments> {
     const alignments = [];
 
     if (alignTo.includes(this.ALIGN_TO.outer)) {
