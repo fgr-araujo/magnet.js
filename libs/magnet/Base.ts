@@ -182,7 +182,7 @@ export default class Base extends HTMLElement {
   /**
    * Get types of alignment of types of align to
    */
-  static getAlignmentsOfAlignTo(alignTo: Array<AlignTos|AlignToParents> = []): Array<Alignments> {
+  static getAlignmentsOfAlignTo(alignTo: Array<AlignTos | AlignToParents> = []): Array<Alignments> {
     const alignments = [];
 
     if (alignTo.includes(this.ALIGN_TO.outer)) {
@@ -258,7 +258,7 @@ export default class Base extends HTMLElement {
    * Be attractable to magnets with the same group
    * If no group, would be seen as non-group magnets
    */
-  set group(val: string|null) {
+  set group(val: string | null) {
     if (isstr(val)) {
       this.setAttribute(Attributes.group, val);
     } else {
@@ -266,7 +266,7 @@ export default class Base extends HTMLElement {
     }
   }
 
-  get group(): string|null {
+  get group(): string | null {
     return this.traceMagnetAttributeValue(Attributes.group);
   }
 
@@ -275,7 +275,7 @@ export default class Base extends HTMLElement {
    *
    * Point to the nearest group node if exists
    */
-  get groupNode(): Base|null {
+  get groupNode(): Base | null {
     let parent = this.parentElement;
 
     while (parent) {
@@ -390,7 +390,7 @@ export default class Base extends HTMLElement {
    *
    * If attribute is not defined, look forward to the nearest group
    */
-  traceMagnetAttributeValue(attrName: string): string|null {
+  traceMagnetAttributeValue(attrName: string): string | null {
     const val = this.getAttribute(attrName);
 
     if (isstr(val)) {

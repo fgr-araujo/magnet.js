@@ -90,11 +90,12 @@ const rawValGetter: ValGetter = (distance) => distance.rawVal;
 /**
  * Calculate attraction from {source} to {target}
  */
+export type OnJudgeDistance = OnJudge<Distance>;
 export type CalcAttractionOption = {
   attractDistance?: number; // distance to attract {target}
   alignments?: Array<Alignments>; // alignments to calculate
   absDistance?: boolean; // judge distance with absolute value
-  onJudgeDistance?: OnJudge<Distance>; // return false if not accept
+  onJudgeDistance?: OnJudgeDistance; // return false if not accept
 };
 
 export type CalcAttractionResult = Summary<Pack, Attraction>;
@@ -243,8 +244,9 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
 /**
  * Calculate attractions from {source} to multiple targets
  */
+export type OnJudgeAttractSummary = OnJudge<CalcAttractionResult>;
 export type CalcMultiAttractionsOption = CalcAttractionOption & {
-  onJudgeAttraction?: OnJudge<CalcAttractionResult>; // return false if not accept
+  onJudgeAttraction?: OnJudgeAttractSummary; // return false if not accept
   bindAttraction?: CalcAttractionResult; // initial attraction to bind
 };
 

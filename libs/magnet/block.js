@@ -652,179 +652,179 @@ function dragStartListener(event) {
 //   };
 // }
 
-/**
- * Handler of magnet drag move
- */
-function magnetDragMoveHandler(event, pack, passPack) {
-  const {
-    lastAttraction, // not ready
-    source,
-    startX,
-    startY,
-    lastOffsetX,
-    lastOffsetY,
-    targets,
-    unattractable,
-    // attractDistance,     // not use
-    // alignTo,             // not use
-    // alignToParent,       // not use
-    // alignToOuterline,    // not use
-    parentAlignments,
-    // alignments,          // not use
-    // crossPrevent,        // not use
-    crossPreventParent,
-    crossPreventTarget,     // yet to support
-    parent,
-    optionsForTargetDistances,
-    optionsForParentDistances,
-  } = pack;
-  const { rectangle } = source;
-  const {
-    rectangle: parentRect,
-  } = parent;
-  const {
-    top: originY,
-    left: originX,
-    width,
-    height,
-  } = rectangle;
-  const {
-    x: cx,
-    y: cy,
-  } = getEventClientXY(event);
-  const offsetX = cx - startX;
-  const offsetY = cy - startY;
-  const originRect = new Rect(rectangle).offset(offsetX, offsetY);
-  const currentRect = new Rect(originRect);
+// /**
+//  * Handler of magnet drag move
+//  */
+// function magnetDragMoveHandler(event, pack, passPack) {
+//   const {
+//     lastAttraction, // not ready
+//     source,
+//     startX,
+//     startY,
+//     lastOffsetX,
+//     lastOffsetY,
+//     targets,
+//     unattractable,
+//     // attractDistance,     // not use
+//     // alignTo,             // not use
+//     // alignToParent,       // not use
+//     // alignToOuterline,    // not use
+//     parentAlignments,
+//     // alignments,          // not use
+//     // crossPrevent,        // not use
+//     crossPreventParent,
+//     crossPreventTarget,     // yet to support
+//     parent,
+//     optionsForTargetDistances,
+//     optionsForParentDistances,
+//   } = pack;
+//   const { rectangle } = source;
+//   const {
+//     rectangle: parentRect,
+//   } = parent;
+//   const {
+//     top: originY,
+//     left: originX,
+//     width,
+//     height,
+//   } = rectangle;
+//   const {
+//     x: cx,
+//     y: cy,
+//   } = getEventClientXY(event);
+//   const offsetX = cx - startX;
+//   const offsetY = cy - startY;
+//   const originRect = new Rect(rectangle).offset(offsetX, offsetY);
+//   const currentRect = new Rect(originRect);
 
-  if (crossPreventParent) {
-    // prevent from going out of parent edges
+//   if (crossPreventParent) {
+//     // prevent from going out of parent edges
 
-    if (currentRect.x < parentRect.left) {
-      currentRect.moveX(parentRect.left);
-    } else if (currentRect.x + width > parentRect.right) {
-      currentRect.moveX(parentRect.right - width);
-    }
-    if (currentRect.y < parentRect.top) {
-      currentRect.moveY(parentRect.top);
-    } else if (currentRect.y + height > parentRect.bottom) {
-      currentRect.moveY(parentRect.bottom - height);
-    }
-  }
-  if (crossPreventTarget) {
-    // TODO: prevent from crossing targets
-  }
+//     if (currentRect.x < parentRect.left) {
+//       currentRect.moveX(parentRect.left);
+//     } else if (currentRect.x + width > parentRect.right) {
+//       currentRect.moveX(parentRect.right - width);
+//     }
+//     if (currentRect.y < parentRect.top) {
+//       currentRect.moveY(parentRect.top);
+//     } else if (currentRect.y + height > parentRect.bottom) {
+//       currentRect.moveY(parentRect.bottom - height);
+//     }
+//   }
+//   if (crossPreventTarget) {
+//     // TODO: prevent from crossing targets
+//   }
 
-  const finalRect = new Rect(currentRect);
+//   const finalRect = new Rect(currentRect);
 
-  do {
-    // would break if any of this or target cancelled
-    if (unattractable) {
-      pack.lastAttraction = null;
-      break;
-    }
+//   do {
+//     // would break if any of this or target cancelled
+//     if (unattractable) {
+//       pack.lastAttraction = null;
+//       break;
+//     }
 
-    // check current attracted targets
-    const attraction = Magnet.getAttractionOfMultipleTargets(
-      currentRect,
-      targets,
-      optionsForTargetDistances,
-      parentAlignments.length > 0
-        ?Magnet.getAttractionOfTarget(
-          currentRect,
-          parent,
-          optionsForParentDistances
-        )
-        :undefined
-    );
+//     // check current attracted targets
+//     const attraction = Magnet.getAttractionOfMultipleTargets(
+//       currentRect,
+//       targets,
+//       optionsForTargetDistances,
+//       parentAlignments.length > 0
+//         ?Magnet.getAttractionOfTarget(
+//           currentRect,
+//           parent,
+//           optionsForParentDistances
+//         )
+//         :undefined
+//     );
 
-    const {
-      min: {
-        x: minX,
-        y: minY,
-      },
-    } = attraction;
-    const lastAttractionX = lastAttraction?.min?.x;
-    const lastAttractionY = lastAttraction?.min?.y;
-    const lastTargetX = lastAttractionX?.target;
-    const lastTargetY = lastAttractionY?.target;
-    const targetX = minX.target;
-    const targetY = minY.target;
-    const diffTargetX = lastTargetX !== targetX;
-    const diffTargetY = lastTargetY !== targetY;
-    const offset = calcOffsetOfAttraction(attraction);
-    const attractRect = new Rect(currentRect).offset(offset.x, offset.y);
-    const eventOptions = genMagnetEventOptions(source, attraction, attractRect);
+//     const {
+//       min: {
+//         x: minX,
+//         y: minY,
+//       },
+//     } = attraction;
+//     const lastAttractionX = lastAttraction?.min?.x;
+//     const lastAttractionY = lastAttraction?.min?.y;
+//     const lastTargetX = lastAttractionX?.target;
+//     const lastTargetY = lastAttractionY?.target;
+//     const targetX = minX.target;
+//     const targetY = minY.target;
+//     const diffTargetX = lastTargetX !== targetX;
+//     const diffTargetY = lastTargetY !== targetY;
+//     const offset = calcOffsetOfAttraction(attraction);
+//     const attractRect = new Rect(currentRect).offset(offset.x, offset.y);
+//     const eventOptions = genMagnetEventOptions(source, attraction, attractRect);
 
-    // handle unattraction
-    if (lastTargetX || lastTargetY) {
-      const unattractX = lastTargetX && diffTargetX;
-      const unattractY = lastTargetY && diffTargetY;
-      const unattractAny = unattractX || unattractY;
+//     // handle unattraction
+//     if (lastTargetX || lastTargetY) {
+//       const unattractX = lastTargetX && diffTargetX;
+//       const unattractY = lastTargetY && diffTargetY;
+//       const unattractAny = unattractX || unattractY;
 
-      if (unattractAny) {
-        const optionsForUnattract = eventOptions;
+//       if (unattractAny) {
+//         const optionsForUnattract = eventOptions;
 
-        // trigger unattract of this
-        triggerMagnetEvent(this, Magnet.EVENT.unattract, optionsForUnattract);
+//         // trigger unattract of this
+//         triggerMagnetEvent(this, Magnet.EVENT.unattract, optionsForUnattract);
 
-        if (unattractX) {
-          // trigger unattracted of last target x
-          triggerMagnetEvent(lastTargetX, Magnet.EVENT.unattracted, optionsForUnattract);
-        }
-        if (unattractY) {
-          // trigger unattracted of last target y
-          triggerMagnetEvent(lastTargetY, Magnet.EVENT.unattracted, optionsForUnattract);
-        }
-      }
-    }
+//         if (unattractX) {
+//           // trigger unattracted of last target x
+//           triggerMagnetEvent(lastTargetX, Magnet.EVENT.unattracted, optionsForUnattract);
+//         }
+//         if (unattractY) {
+//           // trigger unattracted of last target y
+//           triggerMagnetEvent(lastTargetY, Magnet.EVENT.unattracted, optionsForUnattract);
+//         }
+//       }
+//     }
 
-    // handle attraction
-    if (targetX || targetY) {
-      const lastAlignmentX = lastAttractionX?.alignment;
-      const lastAlignmentY = lastAttractionY?.alignment;
-      const alignmentX = minX.alignment;
-      const alignmentY = minY.alignment;
-      const attractX = targetX && (diffTargetX || lastAlignmentX !== alignmentX);
-      const attractY = targetY && (diffTargetY || lastAlignmentY !== alignmentY);
-      const attractAny = attractX || attractY;
+//     // handle attraction
+//     if (targetX || targetY) {
+//       const lastAlignmentX = lastAttractionX?.alignment;
+//       const lastAlignmentY = lastAttractionY?.alignment;
+//       const alignmentX = minX.alignment;
+//       const alignmentY = minY.alignment;
+//       const attractX = targetX && (diffTargetX || lastAlignmentX !== alignmentX);
+//       const attractY = targetY && (diffTargetY || lastAlignmentY !== alignmentY);
+//       const attractAny = attractX || attractY;
 
-      if (attractAny) {
-        const optionsForAttract = eventOptions;
+//       if (attractAny) {
+//         const optionsForAttract = eventOptions;
 
-        // trigger attract of this
-        if (triggerMagnetEvent(this, Magnet.EVENT.attract, optionsForAttract)) {
-          break;
-        }
+//         // trigger attract of this
+//         if (triggerMagnetEvent(this, Magnet.EVENT.attract, optionsForAttract)) {
+//           break;
+//         }
       
-        if (attractX) {
-          // trigger attracted of target x
-          if (triggerMagnetEvent(targetX, Magnet.EVENT.attracted, optionsForAttract)) {
-            // cancel being attracted on x-axis of target
-            offset.x = 0;
-          }
-        }
-        if (attractY) {
-          // trigger attracted of target y
-          if (triggerMagnetEvent(targetY, Magnet.EVENT.attracted, optionsForAttract)) {
-            // cancel being attracted on y-axis of target
-            offset.y = 0;
-          }
-        }
-      }
-    }
+//         if (attractX) {
+//           // trigger attracted of target x
+//           if (triggerMagnetEvent(targetX, Magnet.EVENT.attracted, optionsForAttract)) {
+//             // cancel being attracted on x-axis of target
+//             offset.x = 0;
+//           }
+//         }
+//         if (attractY) {
+//           // trigger attracted of target y
+//           if (triggerMagnetEvent(targetY, Magnet.EVENT.attracted, optionsForAttract)) {
+//             // cancel being attracted on y-axis of target
+//             offset.y = 0;
+//           }
+//         }
+//       }
+//     }
 
-    finalRect.offset(offset.x, offset.y);
-    pack.lastAttraction = attraction;
-  } while (false);
+//     finalRect.offset(offset.x, offset.y);
+//     pack.lastAttraction = attraction;
+//   } while (false);
 
-  const finalX = finalRect.x - originX + lastOffsetX;
-  const finalY = finalRect.y - originY + lastOffsetY;
+//   const finalX = finalRect.x - originX + lastOffsetX;
+//   const finalY = finalRect.y - originY + lastOffsetY;
 
-  this.handleOffset(finalX, finalY);
+//   this.handleOffset(finalX, finalY);
 
-  return passPack;
-}
+//   return passPack;
+// }
 
 // /**
 //  * Handler of magnet drag end

@@ -4,7 +4,7 @@ const xMap = new WeakMap();
 const yMap = new WeakMap();
 
 export default class Point {
-  constructor(x: number|undefined = 0, y: number|undefined = 0) {
+  constructor(x: number | undefined = 0, y: number | undefined = 0) {
     this.x = x;
     this.y = y;
   }

@@ -6,7 +6,7 @@ const xMap: WeakMap<AttractResult, Attraction> = new WeakMap();
 const yMap: WeakMap<AttractResult, Attraction> = new WeakMap();
 
 export default class AttractResult {
-  constructor(src?: Attraction|AttractResult, y?: Attraction) {
+  constructor(src?: Attraction | AttractResult, y?: Attraction) {
     if (AttractResult.isAttractResult(src)) {
       // copy values of {src}
       xMap.set(this, src.x);

@@ -1,6 +1,7 @@
 import {
   isset, isnum,
 } from '../stdlib';
+import Point from './Point';
 
 /**
  * Check if {a} and {b} is almost to be the same nubmer
@@ -29,7 +30,7 @@ export type RectableObj = Record<string, unknown> & {
 };
 
 export default class Rect {
-  constructor(src: RectableObj) {
+  constructor(src: Rect | RectableObj) {
     if (Rect.isRect(src)) {
       // use the same reference
       return src;
@@ -200,10 +201,14 @@ export default class Rect {
 
   get y(): number { return topMap.get(this); }
 
+  get width(): number { return widthMap.get(this); }
+
+  get height(): number { return heightMap.get(this); }
+
   /**
    * Move x|left and right by x
    */
-  offsetX(x: number|undefined = 0): Rect {
+  offsetX(x: number | undefined = 0): Rect {
     if (!isnum(x)) {
       throw new TypeError(`Invalid x: ${x}`);
     }
@@ -217,7 +222,7 @@ export default class Rect {
   /**
    * Move y|top and bottom by y
    */
-  offsetY(y: number|undefined = 0): Rect {
+  offsetY(y: number | undefined = 0): Rect {
     if (!isnum(y)) {
       throw new TypeError(`Invalid y: ${y}`);
     }
@@ -231,7 +236,14 @@ export default class Rect {
   /**
    * Move rectangle by x and y
    */
-  offset(x?: number, y?: number): Rect {
+  offset(ref?: Point | number, y?: number): Rect {
+    if (Point.isPoint(ref)) {
+      this.offsetX(ref.x);
+      this.offsetY(ref.y);
+    }
+
+    const x = ref as number;
+
     this.offsetX(x);
     this.offsetY(y);
 
@@ -241,7 +253,7 @@ export default class Rect {
   /**
    * Move x|left to the new x
    */
-  moveToX(x: number|undefined = this.left): Rect {
+  moveToX(x: number | undefined = this.left): Rect {
     if (!isnum(x)) {
       throw new TypeError(`Invalid x: ${x}`);
     }
@@ -254,7 +266,7 @@ export default class Rect {
   /**
    * Move y|top to the new y
    */
-  moveToY(y: number|undefined = this.top): Rect {
+  moveToY(y: number | undefined = this.top): Rect {
     if (!isnum(y)) {
       throw new TypeError(`Invalid y: ${y}`);
     }
@@ -267,7 +279,14 @@ export default class Rect {
   /**
    * Move rectangle to the new (x, y)
    */
-  moveTo(x?: number, y?: number): Rect {
+  moveTo(ref?: Point | number, y?: number): Rect {
+    if (Point.isPoint(ref)) {
+      this.moveToX(ref.x);
+      this.moveToY(ref.y);
+    }
+
+    const x = ref as number;
+
     this.moveToX(x);
     this.moveToY(y);
 

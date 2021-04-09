@@ -52,7 +52,7 @@ export function toRect(src: RectableSource): Rect {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    src as Window|Document;
+    src as Window | Document;
 
     return new Rect({
       x: 0,

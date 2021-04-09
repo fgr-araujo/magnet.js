@@ -17,7 +17,7 @@ export function isnull(src: unknown): src is null {
  */
 type UseorValidator<T> = (a: T) => boolean;
 
-export function useor<T, U>(a: T, b: U, validator: UseorValidator<T> = isset): T|U {
+export function useor<T, U>(a: T, b: U, validator: UseorValidator<T> = isset): T | U {
   return validator(a) ? a : b;
 }
 
@@ -77,7 +77,7 @@ export function isint(src: unknown): src is number {
 /**
  * Convert {src} to number
  */
-export function toint(src: number|unknown): number {
+export function toint(src: number | unknown): number {
   return (isnum(src)
     // eslint-disable-next-line no-bitwise
     ? (src | 0)
@@ -96,7 +96,7 @@ export function isfunc(src: unknown): src is (...args: Array<unknown>) => unknow
  * Check if {src} is object
  */
 type Obj<
-T extends string|number|symbol = string,
+T extends string | number | symbol = string,
 U = unknown
 > = Record<T, U>;
 

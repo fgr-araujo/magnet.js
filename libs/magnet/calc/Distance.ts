@@ -8,7 +8,7 @@ export default class Distance {
   /**
    * Distance info
    */
-  constructor(src?: Distance|Alignments, ...args: [number?, boolean?]) {
+  constructor(src?: Distance | Alignments, ...args: [number?, boolean?]) {
     if (Distance.isDistance(src)) {
       // use the same reference
       return src;
