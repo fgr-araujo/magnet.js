@@ -22,7 +22,12 @@ module.exports = {
     "ecmaVersion": 12,
     "sourceType": "module"
   },
-  "ignorePatterns": ['demo/**/*.js', '**/*.min.js', '**/.*.js'],
+  "ignorePatterns": [
+    'demo/**/*.js',
+    '*.min.js',
+    '.*.js',
+    '*.config.js',
+  ],
   "plugins": [
     "react",
     "@typescript-eslint"

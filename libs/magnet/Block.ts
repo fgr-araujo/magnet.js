@@ -15,7 +15,7 @@ import Distance from './calc/Distance';
 import {
   addEventListener, removeEventListener,
   getEventDetail, getEvtClientXY, HandleMagnetDragData,
-} from './handler/MagnetHandler';
+} from './handler';
 
 const EVENT_DRAGSTART = ['mousedown', 'touchstart'];
 const EVENT_DRAGMOVE = ['mousemove', 'touchmove'];

@@ -16,7 +16,7 @@ export default class Summary<T, U> {
 
     if (isset(results)) {
       if (!isarray(results)) {
-        throw new Error(`Invalid result list: ${results}`);
+        throw new TypeError(`Invalid result list: ${results}`);
       }
 
       results.forEach((result) => this.addResult(result));

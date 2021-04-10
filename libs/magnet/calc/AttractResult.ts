@@ -33,7 +33,7 @@ export default class AttractResult {
 
   set x(src: Attraction) {
     if (!Attraction.isAttraction(src)) {
-      throw new Error(`Invalid attraction of x: ${src}`);
+      throw new TypeError(`Invalid attraction of x: ${src}`);
     }
 
     xMap.set(this, src);
@@ -46,7 +46,7 @@ export default class AttractResult {
 
   set y(src: Attraction) {
     if (!Attraction.isAttraction(src)) {
-      throw new Error(`Invalid attraction of y: ${src}`);
+      throw new TypeError(`Invalid attraction of y: ${src}`);
     }
 
     yMap.set(this, src);

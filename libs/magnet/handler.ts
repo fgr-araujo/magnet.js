@@ -1,15 +1,15 @@
-import Block from '../block-n';
-import Point from '../../Rect/Point';
-import { isarray } from '../../stdlib';
+import Block from './Block';
+import Point from '../Rect/Point';
+import { isarray } from '../stdlib';
 import Base, {
   Alignments, AlignToParents, AlignTos, CrossPrevents,
-} from '../Base';
+} from './Base';
 import {
   CalcAttractionResult, CalcMultiAttractionsResult,
   OnJudgeAttractSummary, OnJudgeDistance,
-} from '../calc';
-import { Pack } from '../../Rect';
-import Rect from '../../Rect/Rect';
+} from './calc';
+import { Pack } from '../Rect';
+import Rect from '../Rect/Rect';
 
 export type HandleMagnetDragData = {
   attractDistance: number;

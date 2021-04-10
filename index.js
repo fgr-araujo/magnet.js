@@ -1,5 +1,5 @@
 import { Magnet, MagnetGroup } from './libs/magnet';
-import MagnetBase from './libs/magnet/base';
+import MagnetBase from './libs/magnet/Base';
 
 Promise.all(
   [Magnet, MagnetGroup]
