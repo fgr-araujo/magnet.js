@@ -3,15 +3,16 @@ import Point from '../Rect/Point';
 import Rect from '../Rect/Rect';
 import {
   getStyle,
-  isnull,
-  isset, isstr, objValues, toarray, toint, tonum, tostr,
+  isnull, isset, isstr,
+  objValues, toarray, toint, tonum, tostr,
 } from '../stdlib';
 import Base, { Alignments, Attributes } from './Base';
 import {
-  OnJudgeDistance, OnJudgeAttractSummary,
+  OnJudgeOptions, OnJudgeDistance, OnJudgeAttractSummary,
   calcAttraction, CalcAttractionOption, CalcAttractionResult,
   calcMultiAttractions, CalcMultiAttractionsOption, CalcMultiAttractionsResult,
   getOffsetOfAttractResult,
+  isinAttractRange,
 } from './calc';
 import {
   addEventListener, removeEventListener,
@@ -54,12 +55,18 @@ export default class Block extends Base {
       absDistance = true,
       ...options
     }: CalcAttractionOption = {},
+    attachOptions: OnJudgeOptions,
   ): CalcAttractionResult {
-    return calcAttraction(source, target, {
-      ...options,
-      alignments,
-      absDistance,
-    });
+    return calcAttraction(
+      source,
+      target,
+      {
+        ...options,
+        alignments,
+        absDistance,
+      },
+      attachOptions,
+    );
   }
 
   /**
@@ -72,13 +79,19 @@ export default class Block extends Base {
       alignments = objValues(this.ALIGNMENT),
       absDistance = true,
       ...options
-    }: CalcMultiAttractionsOption = {},
+    }: CalcMultiAttractionsOption,
+    attachOptions: OnJudgeOptions,
   ): CalcMultiAttractionsResult {
-    return calcMultiAttractions(source, targets, {
-      ...options,
-      alignments,
-      absDistance,
-    });
+    return calcMultiAttractions(
+      source,
+      targets,
+      {
+        ...options,
+        alignments,
+        absDistance,
+      },
+      attachOptions,
+    );
   }
 
   /**
@@ -112,23 +125,21 @@ export default class Block extends Base {
    */
   getMagnetTargets(): Array<Block> {
     const { group } = this;
-    const groupSelector = (isstr(group)
-      ? `[${Attributes.group}="${group}"]`
-      : ''
-    );
+    const nodeName = this.localName;
     const notDisabledSelector = `:not([${Attributes.disabled}])`;
     const notUnattractableSelector = `:not([${Attributes.unattractable}])`;
-    const selector = `${groupSelector}${notDisabledSelector}${notUnattractableSelector}`;
-    const magnetSelector = `${this.localName}${selector}`;
-    const magnetQueryResults = document.querySelectorAll(magnetSelector);
-    const groupMagnetQueryResults = document.querySelectorAll(`${new Base().localName}${selector} ${magnetSelector}`);
+    const rawSelector = `${notDisabledSelector}${notUnattractableSelector}`;
+    const magnets = toarray(
+      (document.querySelectorAll(`${nodeName}${rawSelector}`) || []),
+    ) as Array<Block>;
 
-    return toarray(magnetQueryResults || [])
-      .concat(toarray(groupMagnetQueryResults || []))
-      .filter((tgt, tgtIndex, tgts) => (
-        tgt !== this // should not include me
-        && tgts.indexOf(tgt) === tgtIndex // no repeat
-      )) as Array<Block>;
+    return magnets.filter((magnet) => {
+      if (isstr(group) && group !== magnet.group) {
+        return false;
+      }
+
+      return magnet !== this;
+    });
   }
 
   /**
@@ -136,9 +147,10 @@ export default class Block extends Base {
    */
   calcAttraction(
     target: RectableSource,
-    options?: CalcAttractionOption,
+    options: CalcAttractionOption,
+    attachOptions: OnJudgeOptions,
   ): CalcAttractionResult {
-    return Block.calcAttraction(this, target, options);
+    return Block.calcAttraction(this, target, options, attachOptions);
   }
 
   /**
@@ -146,17 +158,158 @@ export default class Block extends Base {
    */
   calcMultiAttractions(
     targets: Array<RectableSource>,
-    options?: CalcAttractionOption,
+    options: CalcAttractionOption,
+    attachOptions: OnJudgeOptions,
   ): CalcMultiAttractionsResult {
-    return Block.calcMultiAttractions(this, targets, options);
+    return Block.calcMultiAttractions(
+      this,
+      targets,
+      options,
+      attachOptions,
+    );
   }
 
   /**
    * Judge if {distance} is acceptable
    */
-  judgeDistance: OnJudgeDistance = (distance) => (
-    distance.absVal <= this.attractDistance
-  )
+  judgeDistance: OnJudgeDistance = (distance, targetPack, srcPack, options) => {
+    const { absVal } = distance;
+    const { attractDistance } = options;
+
+    if (absVal > attractDistance) {
+      return false;
+    }
+
+    const { rawVal, alignment } = distance;
+    const {
+      rectangle: srcRect,
+    } = srcPack;
+
+    if (options.crossPreventParent && options.parentPack) {
+      const {
+        parentPack: {
+          rectangle: parentRect,
+        },
+      } = options;
+
+      // refuse when target is out of parent edges
+      switch (alignment) {
+        default:
+          return false; // unknown alignment
+
+        case Block.ALIGNMENT.topToTop:
+        case Block.ALIGNMENT.topToBottom:
+          if (parentRect.top > srcRect.top + rawVal) {
+            return false;
+          }
+          break;
+
+        case Block.ALIGNMENT.rightToRight:
+        case Block.ALIGNMENT.rightToLeft:
+          if (parentRect.right < srcRect.right + rawVal) {
+            return false;
+          }
+          break;
+
+        case Block.ALIGNMENT.bottomToTop:
+        case Block.ALIGNMENT.bottomToBottom:
+          if (parentRect.bottom < srcRect.bottom + rawVal) {
+            return false;
+          }
+          break;
+
+        case Block.ALIGNMENT.leftToLeft:
+        case Block.ALIGNMENT.leftToRight:
+          if (parentRect.left > srcRect.left + rawVal) {
+            return false;
+          }
+          break;
+
+        case Alignments.xCenterToXCenter:
+          if (
+            parentRect.right < srcRect.right + rawVal
+            || parentRect.left > srcRect.left + rawVal
+          ) {
+            return false;
+          }
+          break;
+
+        case Alignments.yCenterToYCenter:
+          if (
+            parentRect.top > srcRect.top + rawVal
+            || parentRect.bottom < srcRect.bottom + rawVal
+          ) {
+            return false;
+          }
+          break;
+      }
+    }
+    if (options.alignToOuterline) {
+      return true;
+    }
+
+    const {
+      rectangle: targetRect,
+    } = targetPack;
+
+    // check if attracted on edge of target
+    switch (alignment) {
+      default:
+        return true; // unknown alignment
+
+      case Block.ALIGNMENT.xCenterToXCenter:
+      case Block.ALIGNMENT.yCenterToYCenter:
+        return true;
+
+      case Block.ALIGNMENT.rightToRight:
+      case Block.ALIGNMENT.leftToLeft:
+      case Block.ALIGNMENT.rightToLeft:
+      case Block.ALIGNMENT.leftToRight:
+      {
+        const {
+          top: srcTop,
+          bottom: srcBottom,
+        } = srcRect;
+        const {
+          top: targetTop,
+          bottom: targetBottom,
+        } = targetRect;
+
+        if (isinAttractRange(attractDistance, srcTop, srcBottom, targetTop, targetBottom)) {
+          return true;
+        }
+        if (isinAttractRange(attractDistance, targetTop, targetBottom, srcTop, srcBottom)) {
+          return true;
+        }
+
+        return false;
+      }
+
+      case Block.ALIGNMENT.topToTop:
+      case Block.ALIGNMENT.bottomToBottom:
+      case Block.ALIGNMENT.topToBottom:
+      case Block.ALIGNMENT.bottomToTop:
+      {
+        const {
+          right: srcRight,
+          left: srcLeft,
+        } = srcRect;
+        const {
+          right: targetRight,
+          left: targetLeft,
+        } = targetRect;
+
+        if (isinAttractRange(attractDistance, srcLeft, srcRight, targetLeft, targetRight)) {
+          return true;
+        }
+        if (isinAttractRange(attractDistance, targetLeft, targetRight, srcLeft, srcRight)) {
+          return true;
+        }
+
+        return false;
+      }
+    }
+  }
 
   /**
    * Judge if {summary} is acceptable
@@ -225,54 +378,14 @@ export default class Block extends Base {
       ? undefined
       : new Pack(parentElement)
     );
-    const parentRect = parent?.rectangle;
     const crossPreventParent = crossPrevent.includes(Block.CROSS_PREVENT.parent);
-    const onJudgeDistance: OnJudgeDistance = (crossPreventParent && parentRect
-      ? (distance, _, srcPack) => {
-        const { rawVal, absVal } = distance;
-        const {
-          rectangle: srcRect,
-        } = srcPack;
-
-        if (absVal > this.attractDistance) {
-          return false;
-        }
-
-        switch (distance.alignment) {
-          default:
-            return true;
-
-          case Alignments.topToTop:
-          case Alignments.topToBottom:
-            return parentRect.top <= srcRect.top + rawVal;
-
-          case Alignments.rightToRight:
-          case Alignments.rightToLeft:
-            return parentRect.right >= srcRect.right + rawVal;
-
-          case Alignments.bottomToTop:
-          case Alignments.bottomToBottom:
-            return parentRect.bottom >= srcRect.bottom + rawVal;
-
-          case Alignments.leftToRight:
-          case Alignments.leftToLeft:
-            return parentRect.left <= srcRect.left + rawVal;
-
-          case Alignments.xCenterToXCenter:
-            return (
-              parentRect.right >= srcRect.right + rawVal
-              && parentRect.left <= srcRect.left + rawVal
-            );
-
-          case Alignments.yCenterToYCenter:
-            return (
-              parentRect.top <= srcRect.top + rawVal
-              && parentRect.bottom >= srcRect.bottom + rawVal
-            );
-        }
-      }
-      : this.judgeDistance.bind(this)
-    );
+    const alignToOuterline = alignTo.includes(Block.ALIGN_TO.outerline);
+    const attachOptions = {
+      attractDistance,
+      alignToOuterline,
+      crossPreventParent,
+      parentPack: parent,
+    };
     const data: MagnetEventParams = {
       attractDistance,
       alignTo,
@@ -287,7 +400,7 @@ export default class Block extends Base {
       crossPreventParent,
       alignments: Block.getAlignmentsOfAlignTo(alignTo),
       parentAlignments: Block.getAlignmentsOfAlignTo(alignToParent),
-      onJudgeDistance,
+      onJudgeDistance: this.judgeDistance.bind(this),
       onJudgeAttractSummary: this.judgeAttractSummary.bind(this),
       onJudgeParentDistance: this.judgeParentDistance.bind(this),
       disabled,
@@ -305,6 +418,7 @@ export default class Block extends Base {
       },
       startXY: getEvtClientXY(evt),
       lastOffset,
+      attachOptions,
     };
 
     let tempStore: MagnetEventParams = data;
@@ -363,7 +477,8 @@ export default class Block extends Base {
   handleMagnetDragMove(evt: Event, data: MagnetEventParams): MagnetEventParams {
     const {
       crossPreventParent,
-      alignments, parentAlignments,
+      alignments,
+      parentAlignments,
       onJudgeDistance,
       onJudgeAttractSummary,
       onJudgeParentDistance,
@@ -376,6 +491,7 @@ export default class Block extends Base {
       startXY,
       lastOffset,
       lastAttractSummary,
+      attachOptions,
     } = data;
     const {
       rectangle: parentRect,
@@ -440,10 +556,12 @@ export default class Block extends Base {
                 alignments: parentAlignments,
                 onJudgeDistance: onJudgeParentDistance,
               },
+              attachOptions,
             )
             : undefined
           ),
         },
+        attachOptions,
       );
       const {
         best: currAttractBest,

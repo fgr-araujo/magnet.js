@@ -19,14 +19,14 @@
       <!-- simple magnet block -->
       <magnet-block>
         <div style="padding:1em; background: #fcc">
-          Inside and w/o attr group="A"
+          Group member
         </div>
       </magnet-block>
       
       <!-- has larger attract distance -->
-      <magnet-block mg-group="A" mg-attract-distance="25">
+      <magnet-block mg-group="B" mg-attract-distance="25">
         <div style="padding:1em; background: #cfc">
-          Inside and w/ attr group="A"
+          Not group member
         </div>
       </magnet-block>
     </magnet-group>
@@ -34,7 +34,7 @@
     <!-- only for attracting -->
     <magnet-block mg-group="A" mg-attract-distance="15">
       <div style="padding:1em; background: #ccf">
-        Outside but w/ attr group="A"
+        Group member outside
       </div>
     </magnet-block>
   </body>

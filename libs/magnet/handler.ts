@@ -6,7 +6,7 @@ import Base, {
 } from './Base';
 import {
   CalcMultiAttractionsResult, cloneMultiAttractionsResult,
-  OnJudgeAttractSummary, OnJudgeDistance,
+  OnJudgeAttractSummary, OnJudgeDistance, OnJudgeOptions,
 } from './calc';
 import { Pack } from '../Rect';
 import Rect from '../Rect/Rect';
@@ -43,6 +43,7 @@ export type MagnetEventParams = {
   startXY: Point;
   lastOffset: Point;
   lastAttractSummary?: CalcMultiAttractionsResult;
+  attachOptions: OnJudgeOptions;
 };
 
 /**

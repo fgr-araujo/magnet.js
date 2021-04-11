@@ -11,9 +11,44 @@ import Point from '../../Rect/Point';
 const BIAS_ATTRACT_GAP = 0.33;
 
 /**
+ * Check if {srcStart} and {srcEnd} are in range of {tgtStart}
+ * and {tgtEnd} with attract distance {attractDistance}
+ */
+export function isinAttractRange(
+  attractDistance: number,
+  srcStart: number,
+  srcEnd: number,
+  tgtStart: number,
+  tgtEnd: number,
+): boolean {
+  const targetRangeStart = tgtStart - attractDistance;
+  const targetRangeEnd = tgtEnd + attractDistance;
+
+  if (srcStart >= targetRangeStart && srcStart <= targetRangeEnd) {
+    return true;
+  }
+  if (srcEnd >= targetRangeStart && srcEnd <= targetRangeEnd) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Function returning true
  */
-type OnJudge<T> = (ref: T, tgtPack: Pack, srcPack: Pack) => boolean;
+export type OnJudgeOptions = {
+  attractDistance: number;
+  alignToOuterline: boolean;
+  crossPreventParent: boolean;
+  parentPack?: Pack;
+};
+type OnJudge<T> = (
+  ref: T,
+  tgtPack: Pack,
+  srcPack: Pack,
+  options: OnJudgeOptions,
+) => boolean;
 
 const trueGetter: OnJudge<unknown> = () => true;
 
@@ -87,7 +122,7 @@ const absValGetter: ValGetter = (distance) => distance?.absVal || Infinity;
 const rawValGetter: ValGetter = (distance) => distance?.rawVal || Infinity;
 
 /**
- * Calculate attraction from {source} to {target}
+ * Judge distance
  */
 export type OnJudgeDistance = OnJudge<Distance>;
 export type CalcAttractionOption = {
@@ -121,10 +156,14 @@ export function cloneAttractionResult(
   );
 }
 
+/**
+ * Calculate attraction from {source} to {target}
+ */
 export type CalcAttraction = (
   source: RectableSource,
   target: RectableSource,
-  options?: CalcAttractionOption,
+  options: CalcAttractionOption,
+  attachOptions: OnJudgeOptions,
 ) => CalcAttractionResult;
 
 export const calcAttraction: CalcAttraction = function calcAttraction(
@@ -136,6 +175,7 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
     absDistance = true,
     onJudgeDistance = trueGetter,
   } = {},
+  attachOptions,
 ) {
   const srcPack = new Pack(source);
   const tgtPack = new Pack(target);
@@ -150,7 +190,7 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
     const rawVal = calcDistance(alignment, srcRect, tgtRect);
     const distance = new Distance(alignment, rawVal, absDistance);
 
-    if (onJudgeDistance(distance, tgtPack, srcPack)) {
+    if (onJudgeDistance(distance, tgtPack, srcPack, attachOptions)) {
       const { results, best } = currSummary;
       const { x, y } = best;
       const distanceVal = valGetter(distance);
@@ -264,7 +304,7 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
 };
 
 /**
- * Calculate attractions from {source} to multiple targets
+ * Judge attraction summary
  */
 export type OnJudgeAttractSummary = OnJudge<CalcAttractionResult>;
 export type CalcMultiAttractionsOption = CalcAttractionOption & {
@@ -296,10 +336,14 @@ export function cloneMultiAttractionsResult(
   );
 }
 
+/**
+ * Calculate attractions from {source} to multiple targets
+ */
 export type CalcMultiAttractions = (
   source: RectableSource,
-  targets?: Array<RectableSource>,
-  options?: CalcMultiAttractionsOption,
+  targets: Array<RectableSource>,
+  options: CalcMultiAttractionsOption,
+  attachOptions: OnJudgeOptions,
 ) => CalcMultiAttractionsResult;
 
 export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttractions(
@@ -313,6 +357,7 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
     onJudgeAttractSummary = trueGetter,
     bindAttraction,
   } = {},
+  attachOptions,
 ) {
   const srcPack = new Pack(source);
   const calcAttractionOptions: CalcAttractionOption = {
@@ -329,7 +374,7 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
   // collect result of attraction summaries
   const summary: CalcMultiAttractionsResult = targets.reduce((currSummary, target) => {
     const tgtPack = new Pack(target);
-    const attractSummary = calcAttraction(srcPack, tgtPack, calcAttractionOptions);
+    const attractSummary = calcAttraction(srcPack, tgtPack, calcAttractionOptions, attachOptions);
     const { best } = attractSummary;
     const minXAttraction = best.x;
     const minYAttraction = best.y;
@@ -348,7 +393,7 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
     currSummary.target.push(tgtPack);
     currSummary.results.push(attractSummary);
 
-    if (onJudgeAttractSummary(attractSummary, tgtPack, srcPack)) {
+    if (onJudgeAttractSummary(attractSummary, tgtPack, srcPack, attachOptions)) {
       do { // jump out in any failure
         if (minXVal > recMinXVal) {
           // larger than minimal

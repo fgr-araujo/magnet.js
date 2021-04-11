@@ -9,7 +9,7 @@ module.exports = {
     './index.ts',
   ],
   output: {
-    filename: 'magnet.js',
+    filename: 'magnet.min.js',
     path: path.resolve(__dirname, BUILD_PATH),
   },
   resolve: {
