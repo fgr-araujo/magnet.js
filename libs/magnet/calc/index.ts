@@ -4,7 +4,6 @@ import Attraction from './Attraction';
 import Summary from './Summary';
 import { Pack, RectableSource, toPack } from '../../Rect';
 import Rect from '../../Rect/Rect';
-import { isset } from '../../stdlib';
 import AttractResult from './AttractResult';
 import Point from '../../Rect/Point';
 
@@ -82,10 +81,10 @@ export const calcDistance: CalcDistance = function calcDistance(
 /**
  * Getter of distance value
  */
-type ValGetter = (distance: Distance) => number;
+type ValGetter = (distance?: Distance) => number;
 
-const absValGetter: ValGetter = (distance) => distance.absVal;
-const rawValGetter: ValGetter = (distance) => distance.rawVal;
+const absValGetter: ValGetter = (distance) => distance?.absVal || Infinity;
+const rawValGetter: ValGetter = (distance) => distance?.rawVal || Infinity;
 
 /**
  * Calculate attraction from {source} to {target}
@@ -98,7 +97,29 @@ export type CalcAttractionOption = {
   onJudgeDistance?: OnJudgeDistance; // return false if not accept
 };
 
-export type CalcAttractionResult = Summary<Pack, Attraction>;
+export type CalcAttractionResultTarget = Pack;
+export type CalcAttractionResultList = Attraction;
+export type CalcAttractionResult = Summary<
+  CalcAttractionResultTarget,
+  CalcAttractionResultList
+>;
+
+/**
+ * Clone attraction result
+ */
+export function cloneAttractionResult(
+  ref: CalcAttractionResult,
+): CalcAttractionResult {
+  return new Summary<
+    CalcAttractionResultTarget,
+    CalcAttractionResultList
+  >(
+    ref.source.clone(),
+    ref.target.clone(),
+    ref.results.map((result) => result.clone()),
+    ref.best.clone(),
+  );
+}
 
 export type CalcAttraction = (
   source: RectableSource,
@@ -133,8 +154,9 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
       const { results, best } = currSummary;
       const { x, y } = best;
       const distanceVal = valGetter(distance);
+      const attraction = new Attraction(srcPack, tgtPack, distance);
 
-      results[alignment] = distance;
+      results.push(attraction);
 
       if (ALIGNMENT_X.includes(alignment)) {
         // compare result on x
@@ -176,7 +198,7 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
             }
           }
 
-          best.x = new Attraction(srcPack, tgtPack, distance);
+          best.x = attraction;
 
         // eslint-disable-next-line no-constant-condition
         } while (false);
@@ -220,7 +242,7 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
             }
           }
 
-          best.y = new Attraction(srcPack, tgtPack, distance);
+          best.y = attraction;
 
           // eslint-disable-next-line no-constant-condition
         } while (false);
@@ -246,11 +268,33 @@ export const calcAttraction: CalcAttraction = function calcAttraction(
  */
 export type OnJudgeAttractSummary = OnJudge<CalcAttractionResult>;
 export type CalcMultiAttractionsOption = CalcAttractionOption & {
-  onJudgeAttraction?: OnJudgeAttractSummary; // return false if not accept
+  onJudgeAttractSummary?: OnJudgeAttractSummary; // return false if not accept
   bindAttraction?: CalcAttractionResult; // initial attraction to bind
 };
 
-export type CalcMultiAttractionsResult = Summary<Array<Pack>, CalcAttractionResult>;
+export type CalcMultiAttractionsResultTarget = Array<Pack>;
+export type CalcMultiAttractionsResultList = CalcAttractionResult;
+export type CalcMultiAttractionsResult = Summary<
+  CalcMultiAttractionsResultTarget,
+  CalcMultiAttractionsResultList
+>;
+
+/**
+ * Clone multiple attractions result
+ */
+export function cloneMultiAttractionsResult(
+  ref: CalcMultiAttractionsResult,
+): CalcMultiAttractionsResult {
+  return new Summary<
+    CalcMultiAttractionsResultTarget,
+    CalcMultiAttractionsResultList
+  >(
+    ref.source.clone(),
+    ref.target.map((tgt) => tgt.clone()),
+    ref.results.map((result) => cloneAttractionResult(result)),
+    ref.best.clone(),
+  );
+}
 
 export type CalcMultiAttractions = (
   source: RectableSource,
@@ -266,14 +310,10 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
     alignments,
     absDistance,
     onJudgeDistance,
-    onJudgeAttraction = trueGetter,
+    onJudgeAttractSummary = trueGetter,
     bindAttraction,
   } = {},
 ) {
-  if (isset(bindAttraction) && !Attraction.isAttraction(bindAttraction)) {
-    throw new TypeError(`Invalid bindAttraction: ${bindAttraction}`);
-  }
-
   const srcPack = new Pack(source);
   const calcAttractionOptions: CalcAttractionOption = {
     attractDistance,
@@ -284,10 +324,7 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
   const valGetter: ValGetter = absDistance ? absValGetter : rawValGetter;
   const initialTargets: Array<Pack> = bindAttraction ? [toPack(bindAttraction.target)] : [];
   const initialresults: Array<CalcAttractionResult> = bindAttraction ? [bindAttraction] : [];
-  const initialAttraction: Attraction = (
-    bindAttraction
-    || new Attraction(srcPack, undefined, new Distance())
-  );
+  const initialAttraction: AttractResult | undefined = bindAttraction?.best;
 
   // collect result of attraction summaries
   const summary: CalcMultiAttractionsResult = targets.reduce((currSummary, target) => {
@@ -311,7 +348,7 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
     currSummary.target.push(tgtPack);
     currSummary.results.push(attractSummary);
 
-    if (onJudgeAttraction(attractSummary, tgtPack, srcPack)) {
+    if (onJudgeAttractSummary(attractSummary, tgtPack, srcPack)) {
       do { // jump out in any failure
         if (minXVal > recMinXVal) {
           // larger than minimal
@@ -358,14 +395,11 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
     }
 
     return currSummary;
-  }, new Summary<Array<Pack>, CalcAttractionResult>(
+  }, new Summary<CalcMultiAttractionsResultTarget, CalcMultiAttractionsResultList>(
     srcPack,
     initialTargets,
     initialresults,
-    new AttractResult(
-      initialAttraction,
-      initialAttraction,
-    ),
+    initialAttraction,
   ));
 
   return summary;
@@ -385,19 +419,19 @@ export const getOffsetOfAttractResult: GetOffsetOfAttractResult = function getOf
     x: {
       alignment: xAlignment,
       rawVal: xRawVal,
-    },
+    } = {},
     y: {
       alignment: yAlignment,
       rawVal: yRawVal,
-    },
+    } = {},
   } = result;
   const offset = new Point(0, 0);
 
   if (ALIGNMENT_X.includes(xAlignment)) {
-    offset.x = xRawVal;
+    offset.x = xRawVal as number;
   }
   if (ALIGNMENT_Y.includes(yAlignment)) {
-    offset.y = yRawVal;
+    offset.y = yRawVal as number;
   }
 
   return offset;

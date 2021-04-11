@@ -1,5 +1,5 @@
 import {
-  isset, isnum, isstr, tonum, objMap, toarray, tostr,
+  isnum, isstr, tonum, objMap, toarray, tostr,
 } from '../stdlib';
 
 // attributes
@@ -28,14 +28,14 @@ export enum Alignments {
   yCenterToYCenter = 'yCenterToYCenter',
 }
 
-export const ALIGNMENT_X = [
+export const ALIGNMENT_X: Array<unknown> = [
   Alignments.rightToRight,
   Alignments.rightToLeft,
   Alignments.leftToRight,
   Alignments.leftToLeft,
   Alignments.xCenterToXCenter,
 ];
-export const ALIGNMENT_Y = [
+export const ALIGNMENT_Y: Array<unknown> = [
   Alignments.topToTop,
   Alignments.topToBottom,
   Alignments.bottomToTop,
@@ -77,10 +77,12 @@ export enum Events {
  * Standardize property values for class static member
  */
 function stdPropValues<T extends Record<string, string>>(props: T): T {
-  return Object.defineProperties({}, objMap(props, (value) => ({
+  const config = objMap(props, (value) => ({
     value,
     enumerable: true,
-  })));
+  }));
+
+  return Object.defineProperties({}, config as PropertyDescriptorMap);
 }
 
 /**
@@ -118,18 +120,18 @@ function stdAttrValToMultiVal<T extends string>(
 
 // default values
 const DEF_ATTRACT_DISTANCE = 0;
-const DEF_ALIGN_TO = [
+const DEF_ALIGN_TO: Array<AlignTos> = [
   AlignTos.outer,
   AlignTos.inner,
   AlignTos.center,
   AlignTos.outerline,
 ];
-const DEF_ALIGN_TO_PARENT = [
-  AlignToParents.inner,
-  AlignToParents.center,
+const DEF_ALIGN_TO_PARENT: Array<AlignToParents> = [
+  // AlignToParents.inner,
+  // AlignToParents.center,
 ];
-const DEF_CROSS_PREVENT = [
-  CrossPrevents.parent,
+const DEF_CROSS_PREVENT: Array<CrossPrevents> = [
+  // CrossPrevents.parent,
 ];
 
 // template HTML for <magnet-*>
@@ -150,7 +152,7 @@ export default class Base extends HTMLElement {
     super();
 
     this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(template.content.cloneNode(true));
+    this.shadowRoot?.appendChild(template.content.cloneNode(true));
   }
 
   /**
@@ -336,8 +338,9 @@ export default class Base extends HTMLElement {
 
   get attractDistance(): number {
     const val = this.traceMagnetAttributeValue(Attributes.attractDistance);
+    const result = tonum(isstr(val) ? val : DEF_ATTRACT_DISTANCE);
 
-    return tonum(isset(val) ? val : DEF_ATTRACT_DISTANCE);
+    return Number.NaN === result ? DEF_ATTRACT_DISTANCE : result;
   }
 
   /**

@@ -27,6 +27,7 @@ module.exports = {
     '*.min.js',
     '.*.js',
     '*.config.js',
+    './*.js',
   ],
   "plugins": [
     "react",

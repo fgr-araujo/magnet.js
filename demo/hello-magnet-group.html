@@ -13,8 +13,8 @@
     <magnet-group
       style="--color: #f00; width: 70vw; height: 50vh; border: 1px solid var(--color);"
       mg-group="A"
-      mg-crossPrevent="parent"
-      mg-attractDistance="10"
+      mg-cross-prevent="parent"
+      mg-attract-distance="10"
     >
       <!-- simple magnet block -->
       <magnet-block>
@@ -24,7 +24,7 @@
       </magnet-block>
       
       <!-- has larger attract distance -->
-      <magnet-block mg-group="A" mg-attractDistance="25">
+      <magnet-block mg-group="A" mg-attract-distance="25">
         <div style="padding:1em; background: #cfc">
           Inside and w/ attr group="A"
         </div>
@@ -32,7 +32,7 @@
     </magnet-group>
       
     <!-- only for attracting -->
-    <magnet-block mg-group="A" mg-attractDistance="15">
+    <magnet-block mg-group="A" mg-attract-distance="15">
       <div style="padding:1em; background: #ccf">
         Outside but w/ attr group="A"
       </div>

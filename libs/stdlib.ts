@@ -1,7 +1,7 @@
 /**
  * Check if {src} is not undefined
  */
-export function isset(src: unknown): src is unknown {
+export function isset<T>(src: T | undefined): src is T {
   return src !== undefined;
 }
 
@@ -10,15 +10,6 @@ export function isset(src: unknown): src is unknown {
  */
 export function isnull(src: unknown): src is null {
   return src === null;
-}
-
-/**
- * Return {a} if it passed {validator}, or return {b}
- */
-type UseorValidator<T> = (a: T) => boolean;
-
-export function useor<T, U>(a: T, b: U, validator: UseorValidator<T> = isset): T | U {
-  return validator(a) ? a : b;
 }
 
 /**
@@ -35,22 +26,22 @@ export function isstr(src: unknown): src is string {
  * Convert {src} to string
  */
 export function tostr(src: unknown): string {
-  return src.toString();
+  return `${src}`;
 }
 
 /**
  * Check if {src} is boolean
  */
-export function isbool(src: unknown): src is boolean {
-  return typeof src === 'boolean';
-}
+// export function isbool(src: unknown): src is boolean {
+//   return typeof src === 'boolean';
+// }
 
 /**
  * Convert {src} to boolean
  */
-export function tobool(src: unknown): boolean {
-  return Boolean(src);
-}
+// export function tobool(src: unknown): boolean {
+//   return Boolean(src);
+// }
 
 /**
  * Check if {src} is number
@@ -96,8 +87,8 @@ export function isfunc(src: unknown): src is (...args: Array<unknown>) => unknow
  * Check if {src} is object
  */
 type Obj<
-T extends string | number | symbol = string,
-U = unknown
+  T extends string | number | symbol = string,
+  U = unknown
 > = Record<T, U>;
 
 export function isobj(src: unknown): src is Obj {
@@ -114,7 +105,7 @@ export function isarray(src: unknown): src is Array<unknown> {
 /**
  * Check if {src} is able to be array
  */
-export function arrayable(src: unknown): boolean {
+export function arrayable(src: unknown): src is Iterable<unknown> {
   return (
     isobj(src)
     && isint(src.length)
@@ -126,7 +117,7 @@ export function arrayable(src: unknown): boolean {
  * Convert {src} to array
  */
 export function toarray(src: unknown): Array<unknown> {
-  return (isstr(src) || isarray(src)
+  return (isstr(src) || arrayable(src)
     ? [...src]
     : [src]
   );
@@ -151,15 +142,16 @@ export function objValues<T extends Obj>(obj: T): Array<T[keyof T]> {
  */
 type ObjForEachFunc<T, U = void> = (val: T[keyof T], key: keyof T, ref: T) => U;
 
-export function objForEach<T extends Obj>(
-  obj: T,
-  func: ObjForEachFunc<T>,
-  self: unknown = this,
-): void {
-  objKeys(obj).forEach((key) => (
-    func.call(self, obj[key], key, obj)
-  ));
-}
+// export function objForEach<T extends Obj>(
+//   this: unknown,
+//   obj: T,
+//   func: ObjForEachFunc<T>,
+//   self: unknown = this,
+// ): void {
+//   objKeys(obj).forEach((key) => (
+//     func.call(self, obj[key], key, obj)
+//   ));
+// }
 
 /**
  * Traverse values of {obj} with passing {initial}
@@ -170,7 +162,7 @@ export function objReduce<T extends Obj, U>(
   obj: T,
   func: ObjReduceFunc<T, U>,
   initial: U,
-): unknown {
+): U {
   return objKeys(obj).reduce((past, key) => (
     func(past, obj[key], key, obj)
   ), initial);
@@ -182,6 +174,7 @@ export function objReduce<T extends Obj, U>(
 type ObjMapFunc<T> = ObjForEachFunc<T, unknown>;
 
 export function objMap<T extends Obj>(
+  this: unknown,
   obj: T,
   func: ObjMapFunc<T>,
   self: unknown = this,
@@ -195,13 +188,13 @@ export function objMap<T extends Obj>(
 /**
  * Check if {src} is element
  */
-export function iselem<T>(src: T): src is T {
-  return (
-    src instanceof Element
-    || src instanceof Window
-    || src instanceof Document
-  );
-}
+// export function iselem<T>(src: T): src is T {
+//   return (
+//     src instanceof Element
+//     || src instanceof Window
+//     || src instanceof Document
+//   );
+// }
 
 /**
  * Get style of {dom}
@@ -216,4 +209,13 @@ export function getStyle(dom: StyledDOM): CSSStyleDeclaration {
     || window?.getComputedStyle(dom)
     || dom?.style
   );
+}
+
+/**
+ * Check if {src} is in enum {e}
+ */
+export function isinEnum<
+  T extends Obj<string, string | number>
+>(src: string | number, e: T): src is T[keyof T] {
+  return isobj(e) && src in e;
 }

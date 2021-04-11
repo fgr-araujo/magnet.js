@@ -1,12 +1,24 @@
 import { isnum } from '../stdlib';
-
-const xMap = new WeakMap();
-const yMap = new WeakMap();
+import Rect from './Rect';
 
 export default class Point {
-  constructor(x: number | undefined = 0, y: number | undefined = 0) {
-    this.x = x;
-    this.y = y;
+  #x = NaN;
+
+  #y = NaN;
+
+  constructor(src: Rect | Point | number = 0, y = 0) {
+    if (Point.isPoint(src)) {
+      return src.clone();
+    }
+    if (Rect.isRect(src)) {
+      this.x = src.x;
+      this.y = src.y;
+    } else {
+      const x = src;
+
+      this.x = isnum(x) ? x : 0;
+      this.y = isnum(y) ? y : 0;
+    }
   }
 
   /**
@@ -19,26 +31,33 @@ export default class Point {
   /**
    * X
    */
-  get x(): number { return xMap.get(this); }
+  get x(): number { return this.#x; }
 
   set x(x: number) {
     if (!isnum(x)) {
       throw new TypeError(`Invalid x: ${x}`);
     }
 
-    xMap.set(this, x);
+    this.#x = x;
   }
 
   /**
    * Y
    */
-  get y(): number { return yMap.get(this); }
+  get y(): number { return this.#y; }
 
   set y(y: number) {
     if (!isnum(y)) {
       throw new TypeError(`Invalid y: ${y}`);
     }
 
-    yMap.set(this, y);
+    this.#y = y;
+  }
+
+  /**
+   * Clone
+   */
+  clone(): Point {
+    return new Point(this.x, this.y);
   }
 }

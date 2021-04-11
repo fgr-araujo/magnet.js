@@ -1,8 +1,8 @@
 setTimeout(function() {
   'use strict';
 
-  const Magnet = window.Magnet;
-  const magnetNodeName = new Magnet().localName;
+  const magnetNodeName = 'magnet-block';
+  const Magnet = customElements.get(magnetNodeName);
   const domForX = document.createElement('div');
   const domForY = document.createElement('div');
   const observer = new MutationObserver(checkMutations);
@@ -37,8 +37,9 @@ setTimeout(function() {
   function showAxis(event) {
     const ALIGNMENT = Magnet.ALIGNMENT;
     const detail = event.detail;
-    const minX = detail.min.x;
-    const minY = detail.min.y;
+    const best = detail.attractSummary.best;
+    const minX = best.x;
+    const minY = best.y;
     const nextRect = detail.nextStep.rectangle;
     const alignmentX = minX.alignment;
     const alignmentY = minY.alignment;
@@ -47,14 +48,17 @@ setTimeout(function() {
       default:
         hideAxisX();
         break;
+
       case ALIGNMENT.leftToRight:
       case ALIGNMENT.leftToLeft:
         showAxisX(nextRect.left);
         break;
+
       case ALIGNMENT.rightToRight:
       case ALIGNMENT.rightToLeft:
         showAxisX(nextRect.right);
         break;
+
       case ALIGNMENT.xCenterToXCenter:
         showAxisX((nextRect.right + nextRect.left) / 2);
         break;
@@ -64,14 +68,17 @@ setTimeout(function() {
       default:
         hideAxisY();
         break;
+
       case ALIGNMENT.topToTop:
       case ALIGNMENT.topToBottom:
         showAxisY(nextRect.top);
         break;
+
       case ALIGNMENT.bottomToBottom:
       case ALIGNMENT.bottomToTop:
         showAxisY(nextRect.bottom);
         break;
+
       case ALIGNMENT.yCenterToYCenter:
         showAxisY((nextRect.top + nextRect.bottom) / 2);
         break;

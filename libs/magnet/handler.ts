@@ -1,17 +1,21 @@
 import Block from './Block';
 import Point from '../Rect/Point';
-import { isarray } from '../stdlib';
+import { isarray, isset } from '../stdlib';
 import Base, {
   Alignments, AlignToParents, AlignTos, CrossPrevents,
 } from './Base';
 import {
-  CalcAttractionResult, CalcMultiAttractionsResult,
+  CalcMultiAttractionsResult, cloneMultiAttractionsResult,
   OnJudgeAttractSummary, OnJudgeDistance,
 } from './calc';
 import { Pack } from '../Rect';
 import Rect from '../Rect/Rect';
+import AttractResult from './calc/AttractResult';
 
-export type HandleMagnetDragData = {
+/**
+ * Event parameter
+ */
+export type MagnetEventParams = {
   attractDistance: number;
   alignTo: Array<AlignTos>;
   alignToOuter: boolean;
@@ -27,36 +31,81 @@ export type HandleMagnetDragData = {
   parentAlignments: Array<Alignments>;
   onJudgeDistance: OnJudgeDistance;
   onJudgeAttractSummary: OnJudgeAttractSummary;
+  onJudgeParentDistance: OnJudgeDistance;
   disabled: boolean;
   group: string | null;
   unattractable: boolean;
   unmovable: boolean;
-  parent: Pack;
+  parent?: Pack;
   targets: Array<Pack>;
   self: Pack;
   originStyle: Record<'position'|'zIndex'|'transform', string>;
   startXY: Point;
   lastOffset: Point;
-  lastAttractSummary?: CalcAttractionResult;
+  lastAttractSummary?: CalcMultiAttractionsResult;
 };
 
 /**
- * Event detail
+ * Drag event detail
  */
-export type EventDetail = {
+export type AttractResultInfo = {
+  offset: Point;
+  rectangle: Rect;
+  attraction: AttractResult;
+};
+export type DragEventDetail = {
   detail: {
-    attractSummary: CalcMultiAttractionsResult;
-    nextStep: Rect;
+    dragEvent: Event;
+    last?: AttractResultInfo;
   };
 };
-export function getEventDetail(
-  attractSummary: CalcMultiAttractionsResult,
-  nextStep: Rect = attractSummary.source.rectangle,
-): EventDetail {
+
+export function generateDragEventDetail(
+  dragEvent: Event,
+  data: MagnetEventParams,
+): DragEventDetail {
+  const { lastAttractSummary } = data;
+
   return {
     detail: {
-      attractSummary,
-      nextStep,
+      dragEvent,
+      last: (isset(lastAttractSummary)
+        ? {
+          offset: data.lastOffset.clone(),
+          rectangle: data.self.rectangle.clone(),
+          attraction: lastAttractSummary.best.clone(),
+        }
+        : undefined
+      ),
+    },
+  };
+}
+
+/**
+ * Attract event detail
+ */
+export type AttractEventDetail = {
+  detail: {
+    attractSummary: CalcMultiAttractionsResult;
+    nextStep: {
+      offset: Point;
+      rectangle: Rect;
+      attraction: AttractResult;
+    };
+  };
+};
+export function generateAttractEventDetail(
+  attractSummary: CalcMultiAttractionsResult,
+  nextRect: Rect = attractSummary.source.rectangle,
+): AttractEventDetail {
+  return {
+    detail: {
+      attractSummary: cloneMultiAttractionsResult(attractSummary),
+      nextStep: {
+        offset: new Point(nextRect),
+        rectangle: nextRect.clone(),
+        attraction: attractSummary.best.clone(),
+      },
     },
   };
 }
@@ -69,7 +118,7 @@ export function getEvtClientXY(evt: Event): Point {
     return new Point(evt.clientX, evt.clientY);
   }
   if (evt instanceof TouchEvent) {
-    const [touch] = evt.touches;
+    const touch = evt.touches[0];
 
     return new Point(touch.clientX, touch.clientY);
   }
@@ -113,11 +162,6 @@ export const removeEventListener: DragEventListenerProps = function removeEventL
 
 /**
 * Trigger event listener of {src}
-*
-* @param {Block} src
-* @param {string} evtName
-* @param {object} options
-* @returns {boolean} is event canceled
 */
 type TriggerEventProps = (
   src: Block,

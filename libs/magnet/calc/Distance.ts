@@ -1,14 +1,20 @@
+import { isinEnum, isset } from '../../stdlib';
 import { Alignments } from '../Base';
 
-const alignMap = new WeakMap();
-const rawMap = new WeakMap();
-const absMap = new WeakMap();
-
 export default class Distance {
+  #alignment: Alignments | undefined;
+
+  #rawVal = NaN;
+
+  #absVal = NaN;
+
   /**
    * Distance info
    */
-  constructor(src?: Distance | Alignments, ...args: [number?, boolean?]) {
+  constructor(
+    src?: Distance | Alignments,
+    ...args: [number?, boolean?]
+  ) {
     if (Distance.isDistance(src)) {
       // use the same reference
       return src;
@@ -17,11 +23,15 @@ export default class Distance {
     const alignment = src;
     const [val = Infinity, abs = true] = args;
 
-    alignMap.set(this, alignment);
-    rawMap.set(this, val);
+    if (isset(alignment) && !isinEnum(alignment, Alignments)) {
+      throw new TypeError(`Invalid alignment: ${alignment}`);
+    }
+
+    this.#alignment = alignment as Alignments;
+    this.#rawVal = val;
 
     if (abs) {
-      absMap.set(this, Math.abs(val));
+      this.#absVal = Math.abs(val);
     }
   }
 
@@ -35,17 +45,22 @@ export default class Distance {
   /**
    * Type of alignment
    */
-  get alignment(): Alignments {
-    return alignMap.get(this);
-  }
+  get alignment(): Alignments | undefined { return this.#alignment; }
 
   /**
    * Raw distance (+/-)
    */
-  get rawVal(): number { return rawMap.get(this); }
+  get rawVal(): number { return this.#rawVal; }
 
   /**
    * Absolute value of distance
    */
-  get absVal(): number { return absMap.get(this); }
+  get absVal(): number { return this.#absVal; }
+
+  /**
+   * Clone
+   */
+  clone(): Distance {
+    return new Distance(this.alignment, this.rawVal, isset(this.absVal));
+  }
 }

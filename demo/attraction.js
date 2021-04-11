@@ -1,9 +1,7 @@
 setTimeout(function() {
   'use strict';
 
-  const Magnet = window.Magnet;
-  const magnetNodeName = new Magnet().localName;
-
+  const magnetNodeName = 'magnet-block';
   const style = document.createElement('style');
   const css = magnetNodeName + `:hover {
     box-sizing: content-box;

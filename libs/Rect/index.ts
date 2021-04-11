@@ -5,19 +5,22 @@ import {
 } from '../stdlib';
 import Rect, { RectableObj } from './Rect';
 
-const rectMap = new WeakMap();
-const rawMap = new WeakMap();
-
 export type RectableSource = RectableObj | Rect | Pack | Element | Window | Document;
 
 export class Pack {
-  constructor(src: RectableSource) {
+  #rect: Rect;
+
+  #raw: RectableSource;
+
+  constructor(src: RectableSource, clone = false) {
     if (Pack.isPack(src)) {
-      rectMap.set(this, src.rectangle);
-      rawMap.set(this, src.raw);
+      const { rectangle } = src;
+
+      this.#rect = clone ? rectangle.clone() : rectangle;
+      this.#raw = src.raw;
     } else {
-      rectMap.set(this, toRect(src));
-      rawMap.set(this, src);
+      this.#rect = toRect(src);
+      this.#raw = src;
     }
   }
 
@@ -28,9 +31,16 @@ export class Pack {
     return src instanceof this;
   }
 
-  get raw(): unknown { return rawMap.get(this); }
+  get raw(): RectableSource { return this.#raw; }
 
-  get rectangle(): Rect { return rectMap.get(this); }
+  get rectangle(): Rect { return this.#rect; }
+
+  /**
+   * Clone
+   */
+  clone(): Pack {
+    return new Pack(this, true);
+  }
 }
 
 /**
@@ -52,8 +62,6 @@ export function toRect(src: RectableSource): Rect {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    src as Window | Document;
-
     return new Rect({
       x: 0,
       y: 0,
@@ -74,13 +82,18 @@ export function toRect(src: RectableSource): Rect {
       borderLeftWidth,
       boxSizing,
     } = getStyle(src);
+    const {
+      top, right, bottom, left,
+      width: fullWidth,
+      height: fullHeight,
+    } = src.getBoundingClientRect();
     const calcBorder = !/\bborder-box\b/i.test(boxSizing);
     const borderTop = calcBorder ? tonum(borderTopWidth) : 0;
     const borderRight = calcBorder ? tonum(borderRightWidth) : 0;
     const borderBottom = calcBorder ? tonum(borderBottomWidth) : 0;
     const borderLeft = calcBorder ? tonum(borderLeftWidth) : 0;
-    const width = src.clientWidth - borderRight - borderLeft;
-    const height = src.clientHeight - borderTop - borderBottom;
+    const width = fullWidth - borderRight - borderLeft;
+    const height = fullHeight - borderTop - borderBottom;
 
     src as Element;
 
@@ -95,10 +108,6 @@ export function toRect(src: RectableSource): Rect {
         height,
       });
     }
-
-    const {
-      top, right, bottom, left,
-    } = src.getBoundingClientRect();
 
     return new Rect({
       top: top + borderTop,

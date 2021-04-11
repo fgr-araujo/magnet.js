@@ -1,25 +1,34 @@
-import Distance from './Distance';
+import { isset } from '../../stdlib';
 import { RectableSource } from '../../Rect';
-
-const sourceMap = new WeakMap();
-const targetMap = new WeakMap();
-const distanceMap = new WeakMap();
+import Distance from './Distance';
 
 export default class Attraction extends Distance {
+  #source: RectableSource;
+
+  #target: RectableSource | undefined;
+
+  #distance: Distance;
+
   /**
    * Attraction
    */
-  constructor(source: RectableSource, target: RectableSource, distance: Distance) {
-    if (Attraction.isAttraction(source)) {
+  constructor(
+    src: RectableSource,
+    target?: RectableSource,
+    distance: Distance = new Distance(),
+  ) {
+    super(distance.alignment, distance.rawVal, isset(distance.absVal));
+
+    if (Attraction.isAttraction(src)) {
       // use the same reference
-      return source;
+      this.#source = src.source;
+      this.#target = src.target;
+      this.#distance = src.distance;
+    } else {
+      this.#source = src;
+      this.#target = target;
+      this.#distance = distance;
     }
-
-    super(distance);
-
-    sourceMap.set(this, source);
-    targetMap.set(this, target);
-    distanceMap.set(this, distance);
   }
 
   /**
@@ -32,15 +41,22 @@ export default class Attraction extends Distance {
   /**
    * Source
    */
-  get source(): RectableSource { return sourceMap.get(this); }
+  get source(): RectableSource { return this.#source; }
 
   /**
    * Target
    */
-  get target(): RectableSource { return targetMap.get(this); }
+  get target(): RectableSource | undefined { return this.#target; }
 
   /**
    * Distance
    */
-  get distance(): Distance { return distanceMap.get(this); }
+  get distance(): Distance { return this.#distance; }
+
+  /**
+   * Clone
+   */
+  clone(): Attraction {
+    return new Attraction(this.source, this.target, this.distance);
+  }
 }

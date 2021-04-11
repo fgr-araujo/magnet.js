@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    // "outFile": "../../built/local/tsc.js",
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "baseUrl": "."
+  },
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts"
+  ]
+}

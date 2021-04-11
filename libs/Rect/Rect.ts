@@ -11,13 +11,6 @@ function isInBias(a: number, b: number): boolean {
   return Math.abs(a - b) <= BIAS;
 }
 
-const topMap = new WeakMap();
-const rightMap = new WeakMap();
-const bottomMap = new WeakMap();
-const leftMap = new WeakMap();
-const widthMap = new WeakMap();
-const heightMap = new WeakMap();
-
 export type RectableObj = Record<string, unknown> & {
   x?: number;
   y?: number;
@@ -30,10 +23,21 @@ export type RectableObj = Record<string, unknown> & {
 };
 
 export default class Rect {
+  #top = NaN;
+
+  #right = NaN;
+
+  #bottom = NaN;
+
+  #left = NaN;
+
+  #width = NaN;
+
+  #height = NaN;
+
   constructor(src: Rect | RectableObj) {
     if (Rect.isRect(src)) {
-      // use the same reference
-      return src;
+      return src.clone();
     }
 
     const {
@@ -42,12 +46,12 @@ export default class Rect {
       width, height,
     } = src;
 
-    let finalTop: number;
-    let finalRight: number;
-    let finalBottom: number;
-    let finalLeft: number;
-    let finalWidth: number;
-    let finalHeight: number;
+    let finalTop = 0;
+    let finalRight = 0;
+    let finalBottom = 0;
+    let finalLeft = 0;
+    let finalWidth = 0;
+    let finalHeight = 0;
 
     // check horzontal
     if (isset(right)) {
@@ -177,33 +181,33 @@ export default class Rect {
       finalHeight = finalBottom - finalTop;
     }
 
-    topMap.set(this, finalTop);
-    rightMap.set(this, finalRight);
-    bottomMap.set(this, finalBottom);
-    leftMap.set(this, finalLeft);
-    widthMap.set(this, finalWidth);
-    heightMap.set(this, finalHeight);
+    this.#top = finalTop;
+    this.#right = finalRight;
+    this.#bottom = finalBottom;
+    this.#left = finalLeft;
+    this.#width = finalWidth;
+    this.#height = finalHeight;
   }
 
   static isRect(src: unknown): src is Rect {
     return src instanceof this;
   }
 
-  get top(): number { return topMap.get(this); }
+  get top(): number { return this.#top; }
 
-  get right(): number { return rightMap.get(this); }
+  get right(): number { return this.#right; }
 
-  get bottom(): number { return bottomMap.get(this); }
+  get bottom(): number { return this.#bottom; }
 
-  get left(): number { return leftMap.get(this); }
+  get left(): number { return this.#left; }
 
-  get x(): number { return leftMap.get(this); }
+  get width(): number { return this.#width; }
 
-  get y(): number { return topMap.get(this); }
+  get height(): number { return this.#height; }
 
-  get width(): number { return widthMap.get(this); }
+  get x(): number { return this.left; }
 
-  get height(): number { return heightMap.get(this); }
+  get y(): number { return this.top; }
 
   /**
    * Move x|left and right by x
@@ -213,8 +217,8 @@ export default class Rect {
       throw new TypeError(`Invalid x: ${x}`);
     }
 
-    leftMap.set(this, this.left + x);
-    rightMap.set(this, this.right + x);
+    this.#left = this.left + x;
+    this.#right = this.right + x;
 
     return this;
   }
@@ -227,8 +231,8 @@ export default class Rect {
       throw new TypeError(`Invalid y: ${y}`);
     }
 
-    topMap.set(this, this.top + y);
-    bottomMap.set(this, this.bottom + y);
+    this.#top = this.top + y;
+    this.#bottom = this.bottom + y;
 
     return this;
   }
@@ -240,6 +244,8 @@ export default class Rect {
     if (Point.isPoint(ref)) {
       this.offsetX(ref.x);
       this.offsetY(ref.y);
+
+      return this;
     }
 
     const x = ref as number;
@@ -283,6 +289,8 @@ export default class Rect {
     if (Point.isPoint(ref)) {
       this.moveToX(ref.x);
       this.moveToY(ref.y);
+
+      return this;
     }
 
     const x = ref as number;
@@ -291,5 +299,19 @@ export default class Rect {
     this.moveToY(y);
 
     return this;
+  }
+
+  /**
+   * Clone
+   */
+  clone(): Rect {
+    return new Rect({
+      top: this.top,
+      right: this.right,
+      bottom: this.bottom,
+      left: this.left,
+      width: this.width,
+      height: this.height,
+    });
   }
 }

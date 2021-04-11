@@ -1,22 +1,24 @@
-/* eslint-disable no-use-before-define */
-
+import { isset } from '../../stdlib';
 import Attraction from './Attraction';
 
-const xMap: WeakMap<AttractResult, Attraction> = new WeakMap();
-const yMap: WeakMap<AttractResult, Attraction> = new WeakMap();
-
 export default class AttractResult {
-  constructor(src?: Attraction | AttractResult, y?: Attraction) {
-    if (AttractResult.isAttractResult(src)) {
-      // copy values of {src}
-      xMap.set(this, src.x);
-      yMap.set(this, src.y);
-    } else {
-      const x = src;
+  #x: Attraction | undefined;
 
-      xMap.set(this, x);
-      yMap.set(this, y);
+  #y: Attraction | undefined;
+
+  constructor(
+    src?: Attraction | AttractResult,
+    y?: Attraction,
+  ) {
+    if (AttractResult.isAttractResult(src)) {
+      // use the same reference
+      return src;
     }
+
+    const x = src;
+
+    this.x = x;
+    this.y = y;
   }
 
   /**
@@ -29,35 +31,49 @@ export default class AttractResult {
   /**
    * X
    */
-  get x(): Attraction { return xMap.get(this); }
+  get x(): Attraction | undefined { return this.#x; }
 
-  set x(src: Attraction) {
-    if (!Attraction.isAttraction(src)) {
+  set x(src: Attraction | undefined) {
+    if (isset(src) && !Attraction.isAttraction(src)) {
       throw new TypeError(`Invalid attraction of x: ${src}`);
     }
 
-    xMap.set(this, src);
+    this.#x = src;
   }
 
   /**
    * Y
    */
-  get y(): Attraction { return yMap.get(this); }
+  get y(): Attraction | undefined { return this.#y; }
 
-  set y(src: Attraction) {
-    if (!Attraction.isAttraction(src)) {
+  set y(src: Attraction | undefined) {
+    if (isset(src) && !Attraction.isAttraction(src)) {
       throw new TypeError(`Invalid attraction of y: ${src}`);
     }
 
-    yMap.set(this, src);
+    this.#y = src;
   }
 
   /**
    * Get minimal of x/y
    */
-  get any(): Attraction {
+  get any(): Attraction | undefined {
     const { x, y } = this;
 
-    return x.rawVal < y.rawVal ? x : y;
+    if (!isset(x)) {
+      return y;
+    }
+    if (!isset(y)) {
+      return x;
+    }
+
+    return x.distance.rawVal < y.distance.rawVal ? x : y;
+  }
+
+  /**
+   * Clone
+   */
+  clone(): AttractResult {
+    return new AttractResult(this.x?.clone(), this.y?.clone());
   }
 }

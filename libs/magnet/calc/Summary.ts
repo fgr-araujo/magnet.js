@@ -2,21 +2,32 @@ import { Pack } from '../../Rect';
 import { isarray, isset } from '../../stdlib';
 import AttractResult from './AttractResult';
 
-const srcMap = new WeakMap();
-const targetMap = new WeakMap();
-const resultsMap = new WeakMap();
-const bestMap = new WeakMap();
-
 export default class Summary<T, U> {
-  constructor(source: Pack, target: T, results: Array<U>, best: AttractResult) {
-    srcMap.set(this, source);
-    targetMap.set(this, target);
-    resultsMap.set(this, []);
-    this.best = best;
+  #source: Pack;
+
+  #target: T;
+
+  #results: Array<U>;
+
+  #best: AttractResult;
+
+  constructor(
+    source: Pack,
+    target: T,
+    results: Array<U> = [],
+    best?: AttractResult,
+  ) {
+    this.#source = source;
+    this.#target = target;
+    this.#results = [];
+    this.#best = (AttractResult.isAttractResult(best)
+      ? best
+      : new AttractResult()
+    );
 
     if (isset(results)) {
       if (!isarray(results)) {
-        throw new TypeError(`Invalid result list: ${results}`);
+        throw new Error(`Invalid result list: ${results}`);
       }
 
       results.forEach((result) => this.addResult(result));
@@ -26,24 +37,24 @@ export default class Summary<T, U> {
   /**
    * Source
    */
-  get source(): Pack { return srcMap.get(this); }
+  get source(): Pack { return this.#source; }
 
   /**
    * Target
    */
-  get target(): T { return targetMap.get(this); }
+  get target(): T { return this.#target; }
 
   /**
    * Results
    */
-  get results(): Array<U> { return resultsMap.get(this); }
+  get results(): Array<U> { return this.#results; }
 
   /**
    * Best
    */
-  get best(): AttractResult { return bestMap.get(this); }
+  get best(): AttractResult { return this.#best; }
 
-  set best(src: AttractResult) { bestMap.set(this, src); }
+  set best(src: AttractResult) { this.#best = src; }
 
   /**
    * Add attraction result to list
