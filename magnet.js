@@ -192,11 +192,14 @@ class Base extends HTMLElement {
     get group() {
         return this.traceMagnetAttributeValue(Attributes.group);
     }
-    get groupNode() {
+    get parentGroupNode() {
+        const group = this.getAttribute(Attributes.group);
         let parent = this.parentElement;
         while (parent) {
             if (parent instanceof Base) {
-                return parent;
+                if (!stdlib_1.isstr(group) || parent.group === group) {
+                    return parent;
+                }
             }
             parent = parent.parentElement;
         }
@@ -263,9 +266,9 @@ class Base extends HTMLElement {
         if (stdlib_1.isstr(val)) {
             return val;
         }
-        const { groupNode } = this;
-        return (groupNode
-            ? groupNode.traceMagnetAttributeValue(attrName)
+        const { parentGroupNode } = this;
+        return (parentGroupNode
+            ? parentGroupNode.traceMagnetAttributeValue(attrName)
             : null);
     }
     triggerMagnetEvent(evtName, { detail, composed = false, cancelable = true, bubbles = false, } = {}) {
@@ -371,20 +374,112 @@ var Styles;
 class Block extends Base_1.default {
     constructor() {
         super();
-        this.judgeDistance = (distance) => (distance.absVal <= this.attractDistance);
+        this.judgeDistance = (distance, targetPack, srcPack, options) => {
+            const { absVal } = distance;
+            const { attractDistance } = options;
+            if (absVal > attractDistance) {
+                return false;
+            }
+            const { rawVal, alignment } = distance;
+            const { rectangle: srcRect, } = srcPack;
+            if (options.crossPreventParent && options.parentPack) {
+                const { parentPack: { rectangle: parentRect, }, } = options;
+                switch (alignment) {
+                    default:
+                        return false;
+                    case Block.ALIGNMENT.topToTop:
+                    case Block.ALIGNMENT.topToBottom:
+                        if (parentRect.top > srcRect.top + rawVal) {
+                            return false;
+                        }
+                        break;
+                    case Block.ALIGNMENT.rightToRight:
+                    case Block.ALIGNMENT.rightToLeft:
+                        if (parentRect.right < srcRect.right + rawVal) {
+                            return false;
+                        }
+                        break;
+                    case Block.ALIGNMENT.bottomToTop:
+                    case Block.ALIGNMENT.bottomToBottom:
+                        if (parentRect.bottom < srcRect.bottom + rawVal) {
+                            return false;
+                        }
+                        break;
+                    case Block.ALIGNMENT.leftToLeft:
+                    case Block.ALIGNMENT.leftToRight:
+                        if (parentRect.left > srcRect.left + rawVal) {
+                            return false;
+                        }
+                        break;
+                    case Base_1.Alignments.xCenterToXCenter:
+                        if (parentRect.right < srcRect.right + rawVal
+                            || parentRect.left > srcRect.left + rawVal) {
+                            return false;
+                        }
+                        break;
+                    case Base_1.Alignments.yCenterToYCenter:
+                        if (parentRect.top > srcRect.top + rawVal
+                            || parentRect.bottom < srcRect.bottom + rawVal) {
+                            return false;
+                        }
+                        break;
+                }
+            }
+            if (options.alignToOuterline) {
+                return true;
+            }
+            const { rectangle: targetRect, } = targetPack;
+            switch (alignment) {
+                default:
+                    return true;
+                case Block.ALIGNMENT.xCenterToXCenter:
+                case Block.ALIGNMENT.yCenterToYCenter:
+                    return true;
+                case Block.ALIGNMENT.rightToRight:
+                case Block.ALIGNMENT.leftToLeft:
+                case Block.ALIGNMENT.rightToLeft:
+                case Block.ALIGNMENT.leftToRight:
+                    {
+                        const { top: srcTop, bottom: srcBottom, } = srcRect;
+                        const { top: targetTop, bottom: targetBottom, } = targetRect;
+                        if (calc_1.isinAttractRange(attractDistance, srcTop, srcBottom, targetTop, targetBottom)) {
+                            return true;
+                        }
+                        if (calc_1.isinAttractRange(attractDistance, targetTop, targetBottom, srcTop, srcBottom)) {
+                            return true;
+                        }
+                        return false;
+                    }
+                case Block.ALIGNMENT.topToTop:
+                case Block.ALIGNMENT.bottomToBottom:
+                case Block.ALIGNMENT.topToBottom:
+                case Block.ALIGNMENT.bottomToTop:
+                    {
+                        const { right: srcRight, left: srcLeft, } = srcRect;
+                        const { right: targetRight, left: targetLeft, } = targetRect;
+                        if (calc_1.isinAttractRange(attractDistance, srcLeft, srcRight, targetLeft, targetRight)) {
+                            return true;
+                        }
+                        if (calc_1.isinAttractRange(attractDistance, targetLeft, targetRight, srcLeft, srcRight)) {
+                            return true;
+                        }
+                        return false;
+                    }
+            }
+        };
         this.judgeAttractSummary = (summary) => (stdlib_1.isset(summary.best.any));
         this.judgeParentDistance = (...args) => (this.judgeDistance(...args));
         this.attributeChangedCallback(Base_1.Attributes.disabled);
     }
-    static calcAttraction(source, target, _a = {}) {
+    static calcAttraction(source, target, _a = {}, attachOptions) {
         var { alignments = stdlib_1.objValues(this.ALIGNMENT), absDistance = true } = _a, options = __rest(_a, ["alignments", "absDistance"]);
         return calc_1.calcAttraction(source, target, Object.assign(Object.assign({}, options), { alignments,
-            absDistance }));
+            absDistance }), attachOptions);
     }
-    static calcMultiAttractions(source, targets = [], _a = {}) {
+    static calcMultiAttractions(source, targets = [], _a, attachOptions) {
         var { alignments = stdlib_1.objValues(this.ALIGNMENT), absDistance = true } = _a, options = __rest(_a, ["alignments", "absDistance"]);
         return calc_1.calcMultiAttractions(source, targets, Object.assign(Object.assign({}, options), { alignments,
-            absDistance }));
+            absDistance }), attachOptions);
     }
     attributeChangedCallback(attrName) {
         switch (attrName) {
@@ -410,25 +505,23 @@ class Block extends Base_1.default {
     }
     getMagnetTargets() {
         const { group } = this;
-        const groupSelector = (stdlib_1.isstr(group)
-            ? `[${Base_1.Attributes.group}="${group}"]`
-            : '');
+        const nodeName = this.localName;
         const notDisabledSelector = `:not([${Base_1.Attributes.disabled}])`;
         const notUnattractableSelector = `:not([${Base_1.Attributes.unattractable}])`;
-        const selector = `${groupSelector}${notDisabledSelector}${notUnattractableSelector}`;
-        const magnetSelector = `${this.localName}${selector}`;
-        const magnetQueryResults = document.querySelectorAll(magnetSelector);
-        const groupMagnetQueryResults = document.querySelectorAll(`${new Base_1.default().localName}${selector} ${magnetSelector}`);
-        return stdlib_1.toarray(magnetQueryResults || [])
-            .concat(stdlib_1.toarray(groupMagnetQueryResults || []))
-            .filter((tgt, tgtIndex, tgts) => (tgt !== this
-            && tgts.indexOf(tgt) === tgtIndex));
+        const rawSelector = `${notDisabledSelector}${notUnattractableSelector}`;
+        const magnets = stdlib_1.toarray((document.querySelectorAll(`${nodeName}${rawSelector}`) || []));
+        return magnets.filter((magnet) => {
+            if (stdlib_1.isstr(group) && group !== magnet.group) {
+                return false;
+            }
+            return magnet !== this;
+        });
     }
-    calcAttraction(target, options) {
-        return Block.calcAttraction(this, target, options);
+    calcAttraction(target, options, attachOptions) {
+        return Block.calcAttraction(this, target, options, attachOptions);
     }
-    calcMultiAttractions(targets, options) {
-        return Block.calcMultiAttractions(this, targets, options);
+    calcMultiAttractions(targets, options, attachOptions) {
+        return Block.calcMultiAttractions(this, targets, options, attachOptions);
     }
     resetMagnetOffset() {
         this.style.removeProperty(Styles.offsetX);
@@ -455,39 +548,14 @@ class Block extends Base_1.default {
         const parent = (stdlib_1.isnull(parentElement)
             ? undefined
             : new Rect_1.Pack(parentElement));
-        const parentRect = parent === null || parent === void 0 ? void 0 : parent.rectangle;
         const crossPreventParent = crossPrevent.includes(Block.CROSS_PREVENT.parent);
-        const onJudgeDistance = (crossPreventParent && parentRect
-            ? (distance, _, srcPack) => {
-                const { rawVal, absVal } = distance;
-                const { rectangle: srcRect, } = srcPack;
-                if (absVal > this.attractDistance) {
-                    return false;
-                }
-                switch (distance.alignment) {
-                    default:
-                        return true;
-                    case Base_1.Alignments.topToTop:
-                    case Base_1.Alignments.topToBottom:
-                        return parentRect.top <= srcRect.top + rawVal;
-                    case Base_1.Alignments.rightToRight:
-                    case Base_1.Alignments.rightToLeft:
-                        return parentRect.right >= srcRect.right + rawVal;
-                    case Base_1.Alignments.bottomToTop:
-                    case Base_1.Alignments.bottomToBottom:
-                        return parentRect.bottom >= srcRect.bottom + rawVal;
-                    case Base_1.Alignments.leftToRight:
-                    case Base_1.Alignments.leftToLeft:
-                        return parentRect.left <= srcRect.left + rawVal;
-                    case Base_1.Alignments.xCenterToXCenter:
-                        return (parentRect.right >= srcRect.right + rawVal
-                            && parentRect.left <= srcRect.left + rawVal);
-                    case Base_1.Alignments.yCenterToYCenter:
-                        return (parentRect.top <= srcRect.top + rawVal
-                            && parentRect.bottom >= srcRect.bottom + rawVal);
-                }
-            }
-            : this.judgeDistance.bind(this));
+        const alignToOuterline = alignTo.includes(Block.ALIGN_TO.outerline);
+        const attachOptions = {
+            attractDistance,
+            alignToOuterline,
+            crossPreventParent,
+            parentPack: parent,
+        };
         const data = {
             attractDistance,
             alignTo,
@@ -502,7 +570,7 @@ class Block extends Base_1.default {
             crossPreventParent,
             alignments: Block.getAlignmentsOfAlignTo(alignTo),
             parentAlignments: Block.getAlignmentsOfAlignTo(alignToParent),
-            onJudgeDistance,
+            onJudgeDistance: this.judgeDistance.bind(this),
             onJudgeAttractSummary: this.judgeAttractSummary.bind(this),
             onJudgeParentDistance: this.judgeParentDistance.bind(this),
             disabled,
@@ -520,6 +588,7 @@ class Block extends Base_1.default {
             },
             startXY: handler_1.getEvtClientXY(evt),
             lastOffset,
+            attachOptions,
         };
         let tempStore = data;
         if (this.triggerMagnetEvent(Block.EVENT.start, handler_1.generateDragEventDetail(evt, tempStore))) {
@@ -558,7 +627,7 @@ class Block extends Base_1.default {
     }
     handleMagnetDragMove(evt, data) {
         var _a, _b;
-        const { crossPreventParent, alignments, parentAlignments, onJudgeDistance, onJudgeAttractSummary, onJudgeParentDistance, unattractable, parent, targets, self: { rectangle: selfRect, }, startXY, lastOffset, lastAttractSummary, } = data;
+        const { crossPreventParent, alignments, parentAlignments, onJudgeDistance, onJudgeAttractSummary, onJudgeParentDistance, unattractable, parent, targets, self: { rectangle: selfRect, }, startXY, lastOffset, lastAttractSummary, attachOptions, } = data;
         const { rectangle: parentRect, } = parent || {};
         const { x: selfX, y: selfY, width: selfWidth, height: selfHeight, } = selfRect;
         const currXY = handler_1.getEvtClientXY(evt);
@@ -593,9 +662,9 @@ class Block extends Base_1.default {
                     ? Block.calcAttraction(currRect, parent, {
                         alignments: parentAlignments,
                         onJudgeDistance: onJudgeParentDistance,
-                    })
+                    }, attachOptions)
                     : undefined),
-            });
+            }, attachOptions);
             const { best: currAttractBest, } = currAttractSummary;
             const { x: currMinX, y: currMinY, } = currAttractBest;
             const lastAttractX = (_a = lastAttractSummary === null || lastAttractSummary === void 0 ? void 0 : lastAttractSummary.best) === null || _a === void 0 ? void 0 : _a.x;
@@ -913,7 +982,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getOffsetOfAttractResult = exports.calcMultiAttractions = exports.cloneMultiAttractionsResult = exports.calcAttraction = exports.cloneAttractionResult = exports.calcDistance = void 0;
+exports.getOffsetOfAttractResult = exports.calcMultiAttractions = exports.cloneMultiAttractionsResult = exports.calcAttraction = exports.cloneAttractionResult = exports.calcDistance = exports.isinAttractRange = void 0;
 const Base_1 = require("../Base");
 const Distance_1 = __importDefault(require("./Distance"));
 const Attraction_1 = __importDefault(require("./Attraction"));
@@ -922,6 +991,18 @@ const Rect_1 = require("../../Rect");
 const AttractResult_1 = __importDefault(require("./AttractResult"));
 const Point_1 = __importDefault(require("../../Rect/Point"));
 const BIAS_ATTRACT_GAP = 0.33;
+function isinAttractRange(attractDistance, srcStart, srcEnd, tgtStart, tgtEnd) {
+    const targetRangeStart = tgtStart - attractDistance;
+    const targetRangeEnd = tgtEnd + attractDistance;
+    if (srcStart >= targetRangeStart && srcStart <= targetRangeEnd) {
+        return true;
+    }
+    if (srcEnd >= targetRangeStart && srcEnd <= targetRangeEnd) {
+        return true;
+    }
+    return false;
+}
+exports.isinAttractRange = isinAttractRange;
 const trueGetter = () => true;
 const calcDistance = function calcDistance(alignment, srcRect, tgtRect) {
     switch (alignment) {
@@ -956,7 +1037,7 @@ function cloneAttractionResult(ref) {
     return new Summary_1.default(ref.source.clone(), ref.target.clone(), ref.results.map((result) => result.clone()), ref.best.clone());
 }
 exports.cloneAttractionResult = cloneAttractionResult;
-const calcAttraction = function calcAttraction(source, target, { attractDistance = Infinity, alignments = [], absDistance = true, onJudgeDistance = trueGetter, } = {}) {
+const calcAttraction = function calcAttraction(source, target, { attractDistance = Infinity, alignments = [], absDistance = true, onJudgeDistance = trueGetter, } = {}, attachOptions) {
     const srcPack = new Rect_1.Pack(source);
     const tgtPack = new Rect_1.Pack(target);
     const srcRect = srcPack.rectangle;
@@ -967,7 +1048,7 @@ const calcAttraction = function calcAttraction(source, target, { attractDistance
     const summary = alignments.reduce((currSummary, alignment) => {
         const rawVal = exports.calcDistance(alignment, srcRect, tgtRect);
         const distance = new Distance_1.default(alignment, rawVal, absDistance);
-        if (onJudgeDistance(distance, tgtPack, srcPack)) {
+        if (onJudgeDistance(distance, tgtPack, srcPack, attachOptions)) {
             const { results, best } = currSummary;
             const { x, y } = best;
             const distanceVal = valGetter(distance);
@@ -1033,7 +1114,7 @@ function cloneMultiAttractionsResult(ref) {
     return new Summary_1.default(ref.source.clone(), ref.target.map((tgt) => tgt.clone()), ref.results.map((result) => cloneAttractionResult(result)), ref.best.clone());
 }
 exports.cloneMultiAttractionsResult = cloneMultiAttractionsResult;
-const calcMultiAttractions = function calcMultiAttractions(source, targets = [], { attractDistance, alignments, absDistance, onJudgeDistance, onJudgeAttractSummary = trueGetter, bindAttraction, } = {}) {
+const calcMultiAttractions = function calcMultiAttractions(source, targets = [], { attractDistance, alignments, absDistance, onJudgeDistance, onJudgeAttractSummary = trueGetter, bindAttraction, } = {}, attachOptions) {
     const srcPack = new Rect_1.Pack(source);
     const calcAttractionOptions = {
         attractDistance,
@@ -1047,7 +1128,7 @@ const calcMultiAttractions = function calcMultiAttractions(source, targets = [],
     const initialAttraction = bindAttraction === null || bindAttraction === void 0 ? void 0 : bindAttraction.best;
     const summary = targets.reduce((currSummary, target) => {
         const tgtPack = new Rect_1.Pack(target);
-        const attractSummary = exports.calcAttraction(srcPack, tgtPack, calcAttractionOptions);
+        const attractSummary = exports.calcAttraction(srcPack, tgtPack, calcAttractionOptions, attachOptions);
         const { best } = attractSummary;
         const minXAttraction = best.x;
         const minYAttraction = best.y;
@@ -1059,7 +1140,7 @@ const calcMultiAttractions = function calcMultiAttractions(source, targets = [],
         const recMinYVal = valGetter(recMinYAttraction);
         currSummary.target.push(tgtPack);
         currSummary.results.push(attractSummary);
-        if (onJudgeAttractSummary(attractSummary, tgtPack, srcPack)) {
+        if (onJudgeAttractSummary(attractSummary, tgtPack, srcPack, attachOptions)) {
             do {
                 if (minXVal > recMinXVal) {
                     break;

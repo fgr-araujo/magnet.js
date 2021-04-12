@@ -16,25 +16,32 @@
       mg-cross-prevent="parent"
       mg-attract-distance="10"
     >
-      <!-- simple magnet block -->
+      <!-- group member and reference attrs from parent -->
       <magnet-block>
         <div style="padding:1em; background: #fcc">
           Group member
         </div>
       </magnet-block>
-      
-      <!-- has larger attract distance -->
-      <magnet-block mg-group="B" mg-attract-distance="25">
+
+      <!-- group member not walled -->
+      <magnet-block mg-cross-prevent="">
         <div style="padding:1em; background: #cfc">
-          Not group member
+          I can break wall
+        </div>
+      </magnet-block>
+      
+      <!-- no other group member for attracting -->
+      <magnet-block mg-group="B" mg-attract-distance="25">
+        <div style="padding:1em; background: #ccc">
+          Never attract anyone
         </div>
       </magnet-block>
     </magnet-group>
       
-    <!-- only for attracting -->
+    <!-- not wrapped by group so it can break the wall -->
     <magnet-block mg-group="A" mg-attract-distance="15">
       <div style="padding:1em; background: #ccf">
-        Group member outside
+        Outside member
       </div>
     </magnet-block>
   </body>

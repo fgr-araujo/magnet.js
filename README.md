@@ -4,13 +4,13 @@ Magnet.js is a JavaScript library making HTML elements attractable with others i
 
 ## Demo
 
-## How to Use
+## Install
 
 ### Node.js
 
-Install with npm
+Install with npm:
 
-```sh
+```bash
 npm install @lf2com/magnet.js
 
 # Or install from GitHub
@@ -19,7 +19,7 @@ npm install https://github.com/lf2com/magnet.js
 npm install lf2com/magnet.js
 ```
 
-Then we can import/require `@lf2com/magnet.js` in your JS code
+Then we can use `@lf2com/magnet.js`:
 
 ```js
 import '@lf2com/magnet.js';
@@ -29,65 +29,62 @@ require('@lf2com/magnet.js');
 
 ### Browser
 
-Download the [**JS**](https://github.com/lf2com/magnet.js/releases) or directly link it from GitHub
+Download the [**lastest build**](https://github.com/lf2com/magnet.js/releases) or directly link [magnet.min.js](https://lf2com.github.io/magnet.js/magnet.min.js) from GitHub:
 
 ```html
-<!-- include script -->
-<script src="PATH/TO/magnet.min.js"></script>
-<!-- or -->
-<script src="https://lf2com.github.io/magnet.js/magnet.min.js"></script>
+<head>
+  ...
+  <script src="PATH/TO/magnet.min.js"></script>
+  ...
+</head>
 
-<script>
-  console.log(window.Magnet); // Magnet should be accessable
-</script>
+<body>
+  ...
+  <magnet-block>
+    Here we go
+  </magnet-block>
+  ...
+</body>
 ```
 
-## How to Build
+## Build
 
-We can directly run [build](#build) command at `magnet.js` path if gonna build `magnet.js` under `node_modules` path of out project.
-
-### Git
-
-Clone repository from GitHub and install required modules.
+Here we use [**Browserify**][browserify] to build **magnet.js** and use [**UglifyJS**][uglifyjs] to minify as **magnet.min.js**:
 
 ```sh
-git clone https://github.com/lf2com/magnet.js.git
-cd magnet.js
-npm install
-```
+# Build manget.js
+npm run build:raw
 
-### Build
-
-Run the following command and `magnet.min.js` would be built at the project path.
-
-```sh
+# Build both magnet.js and magnet.min.js
 npm run build
 ```
 
 ## Usage
 
-There are 2 HTML elements declared in Magnet.js: [`<manget-block>`](#magnet-block) and [`<magnet-group>`](#magnet-group).
+There are 2 HTML custom elements declared in Magnet.js: [`<manget-block>`](#magnet-block) and [`<magnet-group>`](#magnet-group):
 
 ### Magnet Block
 
-`<magnet-block>` is a DOM for dragging and being attracted by other `<manget-block>`.
+`<magnet-block>` can be dragged and attract other `<manget-block>`.
+
+[demo][demo-hello-block]
 
 ```html
 <!-- simple magnet block -->
-<magnet-block mg-attractDistance="10">
+<magnet-block mg-attract-distance="10">
   <div style="padding:1em; background: #fcc;">
     Hello Magnet.js
   </div>
 </magnet-block>
 
 <!-- has larger attract distance -->
-<magnet-block mg-attractDistance="25">
+<magnet-block mg-attract-distance="25">
   <div style="padding:1em; background: #cfc;">
     Here is a larger magnet
   </div>
 </magnet-block>
 
-<!-- only for attracting -->
+<!-- only for attracting due to "mg-unmovable" -->
 <magnet-block mg-unmovable>
   <div style="padding:1em; background: #ccf;">
     You cannot drag me
@@ -95,12 +92,48 @@ There are 2 HTML elements declared in Magnet.js: [`<manget-block>`](#magnet-bloc
 </magnet-block>
 ```
 
-[demo](./demo/hello-magnet-block.html)
-
 ### Magnet Group
 
-`<magnet-group>` is a DOM that manages all the `<manget-block>`s inside it. Once a `<magnet-block>` is without an attibute of magnet options, it would reference to the nearest parent `<magnet-group>` that has the target attribute.
+`<magnet-group>` is a wrapper managing `<manget-block>` inside it. If a `<magnet-block>` doesn't has specific [magnet attibute](#attributes), it would reference to the nearest parent `<magnet-group>` that has the attribute.
 
+[demo][demo-hello-group]
+
+```html
+<magnet-group
+  style="--color: #f00; width: 70vw; height: 50vh; border: 1px solid var(--color);"
+  mg-group="A"
+  mg-cross-prevent="parent"
+  mg-attract-distance="10"
+>
+  <!-- group member and reference attrs from parent -->
+  <magnet-block>
+    <div style="padding:1em; background: #fcc">
+      Group member
+    </div>
+  </magnet-block>
+
+  <!-- group member not walled -->
+  <magnet-block mg-cross-prevent="">
+    <div style="padding:1em; background: #cfc">
+      I can break wall
+    </div>
+  </magnet-block>
+  
+  <!-- no other group member for attracting -->
+  <magnet-block mg-group="B" mg-attract-distance="25">
+    <div style="padding:1em; background: #ccc">
+      Never attract anyone
+    </div>
+  </magnet-block>
+</magnet-group>
+  
+<!-- not wrapped by group so it can break the wall -->
+<magnet-block mg-group="A" mg-attract-distance="15">
+  <div style="padding:1em; background: #ccf">
+    Outside member
+  </div>
+</magnet-block>
+```
 
 ### Attributes
 
@@ -1149,3 +1182,9 @@ Magnet.measure(rectA, rectB); // MeasureResult object
 ## License
 
 [MIT](/LICENSE) Copyright @ Wan Wan
+
+
+[browserify]: http://browserify.org/
+[uglifyjs]: https://github.com/mishoo/UglifyJS
+[demo-hello-block]: ./demo/hello-magnet-block.html
+[demo-hello-group]: ./demo/hello-magnet-group.html

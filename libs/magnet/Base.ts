@@ -273,16 +273,20 @@ export default class Base extends HTMLElement {
   }
 
   /**
-   * Group node
+   * Parent group node
    *
-   * Point to the nearest group node if exists
+   * Point to the nearest parent group node if exists
    */
-  get groupNode(): Base | null {
+  get parentGroupNode(): Base | null {
+    const group = this.getAttribute(Attributes.group);
+
     let parent = this.parentElement;
 
     while (parent) {
       if (parent instanceof Base) {
-        return parent;
+        if (!isstr(group) || parent.group === group) {
+          return parent;
+        }
       }
 
       parent = parent.parentElement;
@@ -400,10 +404,10 @@ export default class Base extends HTMLElement {
       return val;
     }
 
-    const { groupNode } = this;
+    const { parentGroupNode } = this;
 
-    return (groupNode
-      ? groupNode.traceMagnetAttributeValue(attrName)
+    return (parentGroupNode
+      ? parentGroupNode.traceMagnetAttributeValue(attrName)
       : null
     );
   }
