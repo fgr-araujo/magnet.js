@@ -9,7 +9,7 @@ Promise.all(
     },
     {
       elem: MagnetGroup,
-      nodeName: 'magnet-group',
+      nodeName: 'magnet-pack',
     },
   ]
     .map(({ elem, nodeName }) => {

@@ -1,6 +1,6 @@
 import Block from './Block';
 import Point from '../Rect/Point';
-import { isarray, isset } from '../stdlib';
+import { isarray } from '../stdlib';
 import Base, {
   Alignments, AlignToParents, AlignTos, CrossPrevents,
 } from './Base';
@@ -21,7 +21,7 @@ export type MagnetEventParams = {
   alignToOuter: boolean;
   alignToInner: boolean;
   alignToCenter: boolean;
-  alignToOuterline: boolean;
+  alignToExtend: boolean;
   alignToParent: Array<AlignToParents>;
   alignToParentInner: boolean;
   alignToParentCenter: boolean;
@@ -49,35 +49,30 @@ export type MagnetEventParams = {
 /**
  * Drag event detail
  */
-export type AttractResultInfo = {
+export type BlockState = {
   offset: Point;
   rectangle: Rect;
-  attraction: AttractResult;
+  attraction?: AttractResult;
 };
 export type DragEventDetail = {
   detail: {
-    dragEvent: Event;
-    last?: AttractResultInfo;
+    originEvent: Event;
+    last: BlockState;
   };
 };
 
 export function generateDragEventDetail(
-  dragEvent: Event,
+  originEvent: Event,
   data: MagnetEventParams,
 ): DragEventDetail {
-  const { lastAttractSummary } = data;
-
   return {
     detail: {
-      dragEvent,
-      last: (isset(lastAttractSummary)
-        ? {
-          offset: data.lastOffset.clone(),
-          rectangle: data.self.rectangle.clone(),
-          attraction: lastAttractSummary.best.clone(),
-        }
-        : undefined
-      ),
+      originEvent,
+      last: {
+        offset: data.lastOffset.clone(),
+        rectangle: data.self.rectangle.clone(),
+        attraction: data.lastAttractSummary?.best.clone(),
+      },
     },
   };
 }
@@ -88,11 +83,7 @@ export function generateDragEventDetail(
 export type AttractEventDetail = {
   detail: {
     attractSummary: CalcMultiAttractionsResult;
-    nextStep: {
-      offset: Point;
-      rectangle: Rect;
-      attraction: AttractResult;
-    };
+    next: BlockState;
   };
 };
 export function generateAttractEventDetail(
@@ -102,7 +93,7 @@ export function generateAttractEventDetail(
   return {
     detail: {
       attractSummary: cloneMultiAttractionsResult(attractSummary),
-      nextStep: {
+      next: {
         offset: new Point(nextRect),
         rectangle: nextRect.clone(),
         attraction: attractSummary.best.clone(),

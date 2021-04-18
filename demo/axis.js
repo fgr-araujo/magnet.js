@@ -40,7 +40,7 @@ setTimeout(function() {
     const best = detail.attractSummary.best;
     const minX = best.x;
     const minY = best.y;
-    const nextRect = detail.nextStep.rectangle;
+    const nextRect = detail.next.rectangle;
     const alignmentX = minX.alignment;
     const alignmentY = minY.alignment;
 

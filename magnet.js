@@ -16,7 +16,7 @@ Promise.all([
     },
     {
         elem: Magnet_1.MagnetGroup,
-        nodeName: 'magnet-group',
+        nodeName: 'magnet-pack',
     },
 ]
     .map(({ elem, nodeName }) => {
@@ -78,7 +78,7 @@ var AlignTos;
     AlignTos["outer"] = "outer";
     AlignTos["inner"] = "inner";
     AlignTos["center"] = "center";
-    AlignTos["outerline"] = "outerline";
+    AlignTos["extend"] = "extend";
 })(AlignTos = exports.AlignTos || (exports.AlignTos = {}));
 var AlignToParents;
 (function (AlignToParents) {
@@ -128,7 +128,7 @@ const DEF_ALIGN_TO = [
     AlignTos.outer,
     AlignTos.inner,
     AlignTos.center,
-    AlignTos.outerline,
+    AlignTos.extend,
 ];
 const DEF_ALIGN_TO_PARENT = [];
 const DEF_CROSS_PREVENT = [];
@@ -197,7 +197,8 @@ class Base extends HTMLElement {
         let parent = this.parentElement;
         while (parent) {
             if (parent instanceof Base) {
-                if (!stdlib_1.isstr(group) || parent.group === group) {
+                const parentGroup = parent.group;
+                if (!stdlib_1.isstr(group) || !stdlib_1.isstr(parentGroup) || parentGroup === group) {
                     return parent;
                 }
             }
@@ -271,7 +272,7 @@ class Base extends HTMLElement {
             ? parentGroupNode.traceMagnetAttributeValue(attrName)
             : null);
     }
-    triggerMagnetEvent(evtName, { detail, composed = false, cancelable = true, bubbles = false, } = {}) {
+    triggerMagnetEvent(evtName, { detail, composed = false, cancelable = true, bubbles = true, } = {}) {
         const evt = new CustomEvent(evtName, {
             detail,
             composed,
@@ -298,7 +299,7 @@ Base.ALIGN_TO = stdPropValues({
     outer: AlignTos.outer,
     inner: AlignTos.inner,
     center: AlignTos.center,
-    outerline: AlignTos.outerline,
+    extend: AlignTos.extend,
 });
 Base.ALIGN_TO_PARENT = stdPropValues({
     inner: AlignToParents.inner,
@@ -362,6 +363,8 @@ const Rect_2 = __importDefault(require("../Rect/Rect"));
 const stdlib_1 = require("../stdlib");
 const Base_1 = __importStar(require("./Base"));
 const calc_1 = require("./calc");
+const Attraction_1 = __importDefault(require("./calc/Attraction"));
+const Distance_1 = __importDefault(require("./calc/Distance"));
 const handler_1 = require("./handler");
 const EVENT_DRAGSTART = ['mousedown', 'touchstart'];
 const EVENT_DRAGMOVE = ['mousemove', 'touchmove'];
@@ -425,7 +428,7 @@ class Block extends Base_1.default {
                         break;
                 }
             }
-            if (options.alignToOuterline) {
+            if (options.alignToExtend) {
                 return true;
             }
             const { rectangle: targetRect, } = targetPack;
@@ -549,10 +552,10 @@ class Block extends Base_1.default {
             ? undefined
             : new Rect_1.Pack(parentElement));
         const crossPreventParent = crossPrevent.includes(Block.CROSS_PREVENT.parent);
-        const alignToOuterline = alignTo.includes(Block.ALIGN_TO.outerline);
+        const alignToExtend = alignTo.includes(Block.ALIGN_TO.extend);
         const attachOptions = {
             attractDistance,
-            alignToOuterline,
+            alignToExtend,
             crossPreventParent,
             parentPack: parent,
         };
@@ -562,7 +565,7 @@ class Block extends Base_1.default {
             alignToOuter: alignTo.includes(Block.ALIGN_TO.outer),
             alignToInner: alignTo.includes(Block.ALIGN_TO.inner),
             alignToCenter: alignTo.includes(Block.ALIGN_TO.center),
-            alignToOuterline: alignTo.includes(Block.ALIGN_TO.outerline),
+            alignToExtend: alignTo.includes(Block.ALIGN_TO.extend),
             alignToParent,
             alignToParentInner: alignToParent.includes(Block.ALIGN_TO_PARENT.inner),
             alignToParentCenter: alignToParent.includes(Block.ALIGN_TO_PARENT.center),
@@ -626,8 +629,9 @@ class Block extends Base_1.default {
         tempStore = this.handleMagnetDragMove(evt, tempStore);
     }
     handleMagnetDragMove(evt, data) {
-        var _a, _b;
-        const { crossPreventParent, alignments, parentAlignments, onJudgeDistance, onJudgeAttractSummary, onJudgeParentDistance, unattractable, parent, targets, self: { rectangle: selfRect, }, startXY, lastOffset, lastAttractSummary, attachOptions, } = data;
+        var _a, _b, _c, _d, _e, _f;
+        const { crossPreventParent, alignments, parentAlignments, onJudgeDistance, onJudgeAttractSummary, onJudgeParentDistance, unattractable, parent, targets, self, startXY, lastOffset, lastAttractSummary, attachOptions, } = data;
+        const { rectangle: selfRect, } = self;
         const { rectangle: parentRect, } = parent || {};
         const { x: selfX, y: selfY, width: selfWidth, height: selfHeight, } = selfRect;
         const currXY = handler_1.getEvtClientXY(evt);
@@ -669,10 +673,10 @@ class Block extends Base_1.default {
             const { x: currMinX, y: currMinY, } = currAttractBest;
             const lastAttractX = (_a = lastAttractSummary === null || lastAttractSummary === void 0 ? void 0 : lastAttractSummary.best) === null || _a === void 0 ? void 0 : _a.x;
             const lastAttractY = (_b = lastAttractSummary === null || lastAttractSummary === void 0 ? void 0 : lastAttractSummary.best) === null || _b === void 0 ? void 0 : _b.y;
-            const lastTargetX = lastAttractX === null || lastAttractX === void 0 ? void 0 : lastAttractX.target;
-            const lastTargetY = lastAttractY === null || lastAttractY === void 0 ? void 0 : lastAttractY.target;
-            const currTargetX = currMinX === null || currMinX === void 0 ? void 0 : currMinX.target;
-            const currTargetY = currMinY === null || currMinY === void 0 ? void 0 : currMinY.target;
+            const lastTargetX = (_c = lastAttractX === null || lastAttractX === void 0 ? void 0 : lastAttractX.target) === null || _c === void 0 ? void 0 : _c.raw;
+            const lastTargetY = (_d = lastAttractY === null || lastAttractY === void 0 ? void 0 : lastAttractY.target) === null || _d === void 0 ? void 0 : _d.raw;
+            const currTargetX = (_e = currMinX === null || currMinX === void 0 ? void 0 : currMinX.target) === null || _e === void 0 ? void 0 : _e.raw;
+            const currTargetY = (_f = currMinY === null || currMinY === void 0 ? void 0 : currMinY.target) === null || _f === void 0 ? void 0 : _f.raw;
             const diffTargetX = lastTargetX !== currTargetX;
             const diffTargetY = lastTargetY !== currTargetY;
             const nextOffset = calc_1.getOffsetOfAttractResult(currAttractBest);
@@ -715,16 +719,21 @@ class Block extends Base_1.default {
                 const currAttractY = currTargetY && (diffTargetY || lastAlignY !== currAlignY);
                 if (currAttractX || currAttractY) {
                     if (this.triggerMagnetEvent(Block.EVENT.attract, evtOptions)) {
+                        const emptyAttraction = new Attraction_1.default(self, undefined, new Distance_1.default());
+                        currAttractSummary.best.x = emptyAttraction;
+                        currAttractSummary.best.y = emptyAttraction.clone();
                         break;
                     }
                     if (currAttractX && currTargetX instanceof Base_1.default) {
                         if (currTargetX.triggerMagnetEvent(Block.EVENT.attracted, evtOptions)) {
                             nextOffset.x = 0;
+                            currAttractSummary.best.x = new Attraction_1.default(self, undefined, new Distance_1.default());
                         }
                     }
                     if (currAttractY && currTargetY instanceof Base_1.default) {
                         if (currTargetY.triggerMagnetEvent(Block.EVENT.attracted, evtOptions)) {
                             nextOffset.y = 0;
+                            currAttractSummary.best.y = new Attraction_1.default(self, undefined, new Distance_1.default());
                         }
                     }
                 }
@@ -752,7 +761,7 @@ Block.observedAttributes = [
     Base_1.Attributes.unmovable,
 ];
 
-},{"../Rect":13,"../Rect/Point":11,"../Rect/Rect":12,"../stdlib":14,"./Base":2,"./calc":8,"./handler":9}],4:[function(require,module,exports){
+},{"../Rect":13,"../Rect/Point":11,"../Rect/Rect":12,"../stdlib":14,"./Base":2,"./calc":8,"./calc/Attraction":5,"./calc/Distance":6,"./handler":9}],4:[function(require,module,exports){
 "use strict";
 var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (receiver, privateMap) {
     if (!privateMap.has(receiver)) {
@@ -1193,18 +1202,16 @@ const Point_1 = __importDefault(require("../Rect/Point"));
 const stdlib_1 = require("../stdlib");
 const Base_1 = __importDefault(require("./Base"));
 const calc_1 = require("./calc");
-function generateDragEventDetail(dragEvent, data) {
-    const { lastAttractSummary } = data;
+function generateDragEventDetail(originEvent, data) {
+    var _a;
     return {
         detail: {
-            dragEvent,
-            last: (stdlib_1.isset(lastAttractSummary)
-                ? {
-                    offset: data.lastOffset.clone(),
-                    rectangle: data.self.rectangle.clone(),
-                    attraction: lastAttractSummary.best.clone(),
-                }
-                : undefined),
+            originEvent,
+            last: {
+                offset: data.lastOffset.clone(),
+                rectangle: data.self.rectangle.clone(),
+                attraction: (_a = data.lastAttractSummary) === null || _a === void 0 ? void 0 : _a.best.clone(),
+            },
         },
     };
 }
@@ -1213,7 +1220,7 @@ function generateAttractEventDetail(attractSummary, nextRect = attractSummary.so
     return {
         detail: {
             attractSummary: calc_1.cloneMultiAttractionsResult(attractSummary),
-            nextStep: {
+            next: {
                 offset: new Point_1.default(nextRect),
                 rectangle: nextRect.clone(),
                 attraction: attractSummary.best.clone(),

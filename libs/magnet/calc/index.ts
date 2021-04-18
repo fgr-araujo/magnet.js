@@ -39,7 +39,7 @@ export function isinAttractRange(
  */
 export type OnJudgeOptions = {
   attractDistance: number;
-  alignToOuterline: boolean;
+  alignToExtend: boolean;
   crossPreventParent: boolean;
   parentPack?: Pack;
 };

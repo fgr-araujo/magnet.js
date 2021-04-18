@@ -14,6 +14,8 @@ import {
   getOffsetOfAttractResult,
   isinAttractRange,
 } from './calc';
+import Attraction from './calc/Attraction';
+import Distance from './calc/Distance';
 import {
   addEventListener, removeEventListener,
   generateDragEventDetail, generateAttractEventDetail,
@@ -244,7 +246,7 @@ export default class Block extends Base {
           break;
       }
     }
-    if (options.alignToOuterline) {
+    if (options.alignToExtend) {
       return true;
     }
 
@@ -379,10 +381,10 @@ export default class Block extends Base {
       : new Pack(parentElement)
     );
     const crossPreventParent = crossPrevent.includes(Block.CROSS_PREVENT.parent);
-    const alignToOuterline = alignTo.includes(Block.ALIGN_TO.outerline);
+    const alignToExtend = alignTo.includes(Block.ALIGN_TO.extend);
     const attachOptions = {
       attractDistance,
-      alignToOuterline,
+      alignToExtend,
       crossPreventParent,
       parentPack: parent,
     };
@@ -392,7 +394,7 @@ export default class Block extends Base {
       alignToOuter: alignTo.includes(Block.ALIGN_TO.outer),
       alignToInner: alignTo.includes(Block.ALIGN_TO.inner),
       alignToCenter: alignTo.includes(Block.ALIGN_TO.center),
-      alignToOuterline: alignTo.includes(Block.ALIGN_TO.outerline),
+      alignToExtend: alignTo.includes(Block.ALIGN_TO.extend),
       alignToParent,
       alignToParentInner: alignToParent.includes(Block.ALIGN_TO_PARENT.inner),
       alignToParentCenter: alignToParent.includes(Block.ALIGN_TO_PARENT.center),
@@ -485,14 +487,15 @@ export default class Block extends Base {
       unattractable,
       parent,
       targets,
-      self: {
-        rectangle: selfRect,
-      },
+      self,
       startXY,
       lastOffset,
       lastAttractSummary,
       attachOptions,
     } = data;
+    const {
+      rectangle: selfRect,
+    } = self;
     const {
       rectangle: parentRect,
     } = parent || {};
@@ -572,10 +575,10 @@ export default class Block extends Base {
       } = currAttractBest;
       const lastAttractX = lastAttractSummary?.best?.x;
       const lastAttractY = lastAttractSummary?.best?.y;
-      const lastTargetX = lastAttractX?.target;
-      const lastTargetY = lastAttractY?.target;
-      const currTargetX = currMinX?.target;
-      const currTargetY = currMinY?.target;
+      const lastTargetX = (lastAttractX?.target as Pack)?.raw;
+      const lastTargetY = (lastAttractY?.target as Pack)?.raw;
+      const currTargetX = (currMinX?.target as Pack)?.raw;
+      const currTargetY = (currMinY?.target as Pack)?.raw;
       const diffTargetX = lastTargetX !== currTargetX;
       const diffTargetY = lastTargetY !== currTargetY;
       const nextOffset = getOffsetOfAttractResult(currAttractBest);
@@ -635,6 +638,10 @@ export default class Block extends Base {
         if (currAttractX || currAttractY) {
           // trigger attract of this
           if (this.triggerMagnetEvent(Block.EVENT.attract, evtOptions)) {
+            const emptyAttraction = new Attraction(self, undefined, new Distance());
+
+            currAttractSummary.best.x = emptyAttraction;
+            currAttractSummary.best.y = emptyAttraction.clone();
             break;
           }
 
@@ -643,6 +650,7 @@ export default class Block extends Base {
             if (currTargetX.triggerMagnetEvent(Block.EVENT.attracted, evtOptions)) {
               // cancel being attracted on x-axis of target
               nextOffset.x = 0;
+              currAttractSummary.best.x = new Attraction(self, undefined, new Distance());
             }
           }
           if (currAttractY && currTargetY instanceof Base) {
@@ -650,6 +658,7 @@ export default class Block extends Base {
             if (currTargetY.triggerMagnetEvent(Block.EVENT.attracted, evtOptions)) {
               // cancel being attracted on y-axis of target
               nextOffset.y = 0;
+              currAttractSummary.best.y = new Attraction(self, undefined, new Distance());
             }
           }
         }

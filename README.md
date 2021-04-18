@@ -29,7 +29,7 @@ require('@lf2com/magnet.js');
 
 ### Browser
 
-Download the [**lastest build**](https://github.com/lf2com/magnet.js/releases) or directly link [magnet.min.js](https://lf2com.github.io/magnet.js/magnet.min.js) from GitHub:
+Download the [**lastest build**][lastest-build] or directly link [magnet.min.js][lastest-js] from GitHub:
 
 ```html
 <head>
@@ -61,7 +61,7 @@ npm run build
 
 ## Usage
 
-There are 2 HTML custom elements declared in Magnet.js: [`<manget-block>`](#magnet-block) and [`<magnet-group>`](#magnet-group):
+There are 2 HTML custom elements declared in Magnet.js: [`<manget-block>`][magnet-block] and [`<magnet-pack>`][magnet-pack]:
 
 ### Magnet Block
 
@@ -72,488 +72,557 @@ There are 2 HTML custom elements declared in Magnet.js: [`<manget-block>`](#magn
 ```html
 <!-- simple magnet block -->
 <magnet-block mg-attract-distance="10">
-  <div style="padding:1em; background: #fcc;">
+  <div style="padding:1em; background: #fcc; display: inline-block;">
     Hello Magnet.js
   </div>
 </magnet-block>
 
 <!-- has larger attract distance -->
 <magnet-block mg-attract-distance="25">
-  <div style="padding:1em; background: #cfc;">
+  <div style="padding:1em; background: #cfc; display: inline-block;">
     Here is a larger magnet
   </div>
 </magnet-block>
 
 <!-- only for attracting due to "mg-unmovable" -->
 <magnet-block mg-unmovable>
-  <div style="padding:1em; background: #ccf;">
+  <div style="padding:1em; background: #ccf; display: inline-block;">
     You cannot drag me
   </div>
 </magnet-block>
 ```
 
-### Magnet Group
+### Magnet Pack
 
-`<magnet-group>` is a wrapper managing `<manget-block>` inside it. If a `<magnet-block>` doesn't has specific [magnet attibute](#attributes), it would reference to the nearest parent `<magnet-group>` that has the attribute.
+`<magnet-pack>` is a wrapper managing `<manget-block>` inside it.
+
+If a `<magnet-block>` doesn't has specific [magnet attibute][magnet-attribute], it would reference to the nearest parent `<magnet-pack>` that has the attribute.
 
 [demo][demo-hello-group]
 
 ```html
-<magnet-group
-  style="--color: #f00; width: 70vw; height: 50vh; border: 1px solid var(--color);"
+<magnet-pack
+  style="width: 500px; height: 300px; border: 1px solid #000;"
   mg-group="A"
   mg-cross-prevent="parent"
   mg-attract-distance="10"
 >
   <!-- group member and reference attrs from parent -->
   <magnet-block>
-    <div style="padding:1em; background: #fcc">
+    <div style="padding:1em; background: #fcc; display: inline-block;">
       Group member
     </div>
   </magnet-block>
 
   <!-- group member not walled -->
   <magnet-block mg-cross-prevent="">
-    <div style="padding:1em; background: #cfc">
+    <div style="padding:1em; background: #cfc; display: inline-block;">
       I can break wall
     </div>
   </magnet-block>
   
   <!-- no other group member for attracting -->
   <magnet-block mg-group="B" mg-attract-distance="25">
-    <div style="padding:1em; background: #ccc">
+    <div style="padding:1em; background: #ccc; display: inline-block;">
       Never attract anyone
     </div>
   </magnet-block>
-</magnet-group>
+</magnet-pack>
   
 <!-- not wrapped by group so it can break the wall -->
 <magnet-block mg-group="A" mg-attract-distance="15">
-  <div style="padding:1em; background: #ccf">
+  <div style="padding:1em; background: #ccf; display: inline-block;">
     Outside member
   </div>
 </magnet-block>
 ```
 
-### Attributes
+## Attributes
 
+We can assign features for both [`<manget-block>`][magnet-block] and [`<magnet-pack>`][magnet-pack] with following attributes:
 
+| Name |  Description |
+| :-: | :- |
+| [mg-disabled][mg-attr-disabled] | No dragging and attracting |
+| [mg-group][mg-attr-group] | Group of magnet |
+| [mg-unattractable][mg-attr-unattractable] | No attracting |
+| [mg-unmovable][mg-attr-unmovable]| No dragging |
+| [mg-attract-distance][mg-attr-attract-distance] | Distance to attract others |
+| [mg-align-to][mg-attr-align-to] | Alignment of this block |
+| [mg-align-to-parent][mg-attr-align-to-parent] | Alignment to parent element |
+| [mg-cross-prevent][mg-attr-cross-prevent] | Targets not allow to cross |
 
+### mg-disabled
 
+> Type: _any_
+>
+> Default: _**null**_
 
+Once we assign `mg-disabled` to `<magnet-block>`, it would be unable to be dragged and attract others. Also, it could not be attracted by others.
 
+If we assign `mg-disabled` to `<magnet-pack>`, all the `<magnet-block>` of it would be unable to do anything.
 
+_**`mg-disabled` effects as the same as setting both [`mg-unattractable`][mg-attr-unattractable] and [`mg-unmovable`][mg-attr-unmovable].**_
 
+```html
+<magnet-pack mg-attract-distance="15">
+  <!-- block can be dragged and attract -->
+  <magnet-block>
+    <div style="padding: 1em; background: #fcc; display: inline-block;">
+      Enabled block
+    </div>
+  </magnet-block>
 
-### Create Magnet Group
+  <!-- block can be dragged and attract -->
+  <magnet-block>
+    <div style="padding: 1em; background: #cfc; display: inline-block;">
+      Enabled block
+    </div>
+  </magnet-block>
 
-Create a magnet group. All the elements added into the group would be applied the attract behaviors.
-
-```js
-let magnet = new Magnet();
+  <!-- unable to be dragged and attract -->
+  <magnet-block mg-disabled>
+    <div style="padding: 1em; background: #ccf; display: inline-block;">
+      Disabled block
+    </div>
+  </magnet-block>
+</magnet-pack>
 ```
 
-> _**jQuery**_
+### mg-group
+
+> Type: _string_
 >
-> Create a new group
->
-> #### $.magnet([options?](#magnet-default-values))
->
-> ```js
-> let options = {
->   distance: 15,
->   stayInParent: true,
-> };
-> let $magnet = $.magnet(options);
-> ```
+> Default: _**null**_
 
-### Add Elements
+To prevent from attracting `<magnet-block>` we don't want, we can specify groups for them.
 
-Add HTML elements into the group
+Once a `<magnet-block>` belongs to a group, it could only interactive with others in the same group.
 
-#### .add(...DOMs)
+A `<magnet-block>` without group can attract any `<magnet-block>` even if they already have their own group.
 
-```js
-magnet.add(document.querySelectorAll('.magnet')); // return this
+```html
+<magnet-pack mg-attract-distance="15">
+  <!-- block in group A, only active with group A -->
+  <magnet-block mg-group="A">
+    <div style="padding: 1em; background: #fcc; display: inline-block;">
+      Block A1
+    </div>
+  </magnet-block>
+
+  <!-- block in group A, only active with group A -->
+  <magnet-block mg-group="A">
+    <div style="padding: 1em; background: #cfc; display: inline-block;">
+      Block A2
+    </div>
+  </magnet-block>
+
+  <!-- block in group B, only active with group B -->
+  <magnet-block mg-group="B">
+    <div style="padding: 1em; background: #ccf; display: inline-block;">
+      Block B1
+    </div>
+  </magnet-block>
+
+  <!-- block in no group, can attract others -->
+  <magnet-block>
+    <div style="padding: 1em; background: #ffc; display: inline-block;">
+      Block any
+    </div>
+  </magnet-block>
+</magnet-pack>
 ```
 
-> _Or add HTML element when creating a group_
->
-> ```js
-> let magnet = new Magnet(document.querySelectorAll('.magnet'));
-> ```
->
-> _Flexable ways to add elements_
->
-> ```js
-> magnet.add(
->   document.querySelectorAll('.magnet'),
->   document.querySelectorAll('.other-magnet'),
->   document.getElementById('major-magnet')
-> );
->
-> // the same as above
-> magnet
->   .add(document.querySelectorAll('.magnet'))
->   .add(document.querySelectorAll('.other-magnet'))
->   .add(document.getElementById('major-magnet'));
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.add(...DOMs)](#adddoms)
->
-> Add elements to an existing group
->
-> #### $.fn.magnet([options?](#magnet-default-values))
->
-> Add element to a new group
->
-> ```js
-> let $magnet = $('.magnet').magnet(options);
-> ```
+### mg-unattractable
 
-### Remove Elements
+> Type: _any_
+>
+> Default: **null**
 
-Remove HTML elements from the group
+This attribute makes `<magnet-block>` unable to attract others and be attracted by others. But it is still draggable.
 
-#### .remove(...DOMs)
+```html
+<magnet-pack mg-attract-distance="15">
+  <!-- attractable -->
+  <magnet-block>
+    <div style="padding: 1em; background: #fcc; display: inline-block;">
+      Block attractable
+    </div>
+  </magnet-block>
 
-_**Keep** the positon changed by the magnet_
+  <!-- attractable -->
+  <magnet-block>
+    <div style="padding: 1em; background: #cfc; display: inline-block;">
+      Block attractable
+    </div>
+  </magnet-block>
 
-```js
-magnet.remove(document.querySelector('.magnet')); // return this
+  <!-- unattractable -->
+  <magnet-block mg-unattractable>
+    <div style="padding: 1em; background: #ccf; display: inline-block;">
+      Block unattractable
+    </div>
+  </magnet-block>
+</magnet-pack>
 ```
 
-#### .removeFull(...DOMs)
+### mg-unmovable
 
-_**Remove** the positions changed by the magnet_
+> Type: _any_
+>
+> Default: **null**
 
-```js
-magnet.removeFull(document.querySelector('.magnet')); // return this
+Disallow `<magnet-block>` to be dragged. But it still can be attracted.
+
+```html
+<magnet-pack mg-attract-distance="15">
+  <!-- movable -->
+  <magnet-block>
+    <div style="padding: 1em; background: #fcc; display: inline-block;">
+      Block movable
+    </div>
+  </magnet-block>
+
+  <!-- movable -->
+  <magnet-block>
+    <div style="padding: 1em; background: #cfc; display: inline-block;">
+      Block movable
+    </div>
+  </magnet-block>
+
+  <!-- unmovable -->
+  <magnet-block mg-unmovable>
+    <div style="padding: 1em; background: #ccf; display: inline-block;">
+      Block unmovable
+    </div>
+  </magnet-block>
+</magnet-pack>
 ```
 
-> _Flexable ways to remove elements_
+### mg-attract-distance
+
+> Type: _number (px)_
 >
-> ```js
-> magnet.remove(
->   document.querySelectorAll('.magnet'),
->   document.querySelectorAll('.other-magnet'),
->   document.getElementById('major-magnet')
-> );
->
-> // the same as above
-> magnet
->   .remove(document.querySelectorAll('.magnet'))
->   .remove(document.querySelectorAll('.other-magnet'))
->   .remove(document.getElementById('major-magnet'));
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.remove(...DOMs)](#removedoms)
->
-> #### [$magnet.removeFull(...DOMs)](#removefulldoms)
+> Default: **0**
 
-### Clear All Elements
+Define the distance a `<magnet-block>` can attract others on being dragged. This distance only effects how far it sense others.
 
-Remove all the HTML elements from the group
+_**If assign a negative value, it would be the same as setting `0`, which has no attract effect when drag it.**_
 
-#### .clear()
+```html
+<magnet-pack mg-attract-distance="15">
+  <!-- inherit attract distance 15 -->
+  <magnet-block>
+    <div style="padding: 1em; background: #fcc; display: inline-block;">
+      Block default 15
+    </div>
+  </magnet-block>
 
-_**Keep** the position changed by the magnet_
-
-````js
-magnet.clear();
-````
-
-#### .clearFull()
-
-_**Remove** the position changed by the magnet_
-
-```js
-magnet.clearFull();
+  <!-- attract distance 30 -->
+  <magnet-block mg-attract-distance="30">
+    <div style="padding: 1em; background: #cfc; display: inline-block;">
+      Block 30
+    </div>
+  </magnet-block>
+  
+  <!-- attract distance 10 -->
+  <magnet-block mg-attract-distance="10">
+    <div style="padding: 1em; background: #ccf; display: inline-block;">
+      Block 10
+    </div>
+  </magnet-block>
+  
+  <!-- attract distance -10, unable to attract anyone -->
+  <magnet-block mg-attract-distance="-10">
+    <div style="padding: 1em; background: #ffc; display: inline-block;">
+      Block -10
+    </div>
+  </magnet-block>
+</magnet-pack>
 ```
 
-> _**jQuery**_
+### mg-align-to
+
+> Type: **outer** | **inner** | **center** | **extend**
 >
-> #### [$magnet.clear()](#clear)
->
-> #### [$magnet.clearFull()](#clearfull)
+> Default: **outer|inner|center|extend**
 
-### Distance of Attraction
+Determine how `<magnet-block>` align to others.
 
-Distance for elements to attract others in the same group
+| Name | Description |
+| :-: | :- |
+| outer | Align to edges from outside |
+| inner | Align to edges from inside |
+| center | Align to extending line of x/y center |
+| extend | Align to extending line of outer/inner edges. **Must assign any of `outer`\|`inner` for reference** |
 
-> _Default: `0` (px)_
+```html
+<magnet-pack mg-attract-distance="15">
+  <!-- align to inner -->
+  <magnet-block mg-align-to="inner">
+    <div style="padding: 1em; background: #fcc; display: inline-block;">
+      Block inner
+    </div>
+  </magnet-block>
+  
+  <!-- align to outer -->
+  <magnet-block mg-align-to="outer">
+    <div style="padding: 1em; background: #cfc; display: inline-block;">
+      Block outer
+    </div>
+  </magnet-block>
+  
+  <!-- align to center -->
+  <magnet-block mg-align-to="center">
+    <div style="padding: 1em; background: #ccf; display: inline-block;">
+      Block center
+    </div>
+  </magnet-block>
 
-#### .distance(px?)
-
-Get/set distance
-
-```js
-magnet.distance(15); // set: unit px, return this
-magnet.distance(); // get: 15
+  <!-- align to outer with extending line -->
+  <magnet-block mg-align-to="outerline|outer">
+    <div style="padding: 1em; background: #ffc; display: inline-block;">
+      Block outer extend
+    </div>
+  </magnet-block>
+</magnet-pack>
 ```
 
-> _Alias_
->
-> #### .setDistance(px)
->
-> ```js
-> magnet.setDistance(15); // set to 15
-> ```
->
-> #### .getDistance()
->
-> ```js
-> magnet.getDistance(); // get 15
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.distance(px?)](#distancepx)
+### mg-align-to-parent
 
-### Attractable
-
-Attractable between group members
-
-> _Default: `true`_
+> Type: **inner** | **center**
 >
-> **NOTICE: Setting to `false` has the same effect as pressing `ctrl` key**
+> Default: **null**
 
-#### .attractable(enabled?)
+Define how `<magnet-block>` align to its parent element.
 
-Get/set attractable
+_**Since the target is parent element, only accept `inner`|`center` for aligning.**_
 
-```js
-magnet.attractable(true); // set to attract members, return this
-magnet.attractable(); // get: true
+| Name | Description |
+| :-: | :- |
+| inner | Align to edges from inside |
+| center | Align to x/y center |
+
+```html
+<!-- disable blocks to attract each other -->
+<magnet-pack mg-attract-distance="15" mg-align-to="">
+  <div style="width: 500px; height: 300px; border: 1px solid #000;">
+    <!-- align to parent inner -->
+    <magnet-block mg-align-to-parent="inner">
+      <div style="padding: 1em; background: #fcc; display: inline-block;">
+        Block inner
+      </div>
+    </magnet-block>
+    
+    <!-- align to parent center -->
+    <magnet-block mg-align-to-parent="center">
+      <div style="padding: 1em; background: #cfc; display: inline-block;">
+        Block center
+      </div>
+    </magnet-block>
+    
+    <!-- align to parent inner and center -->
+    <magnet-block mg-align-to-parent="inner|center">
+      <div style="padding: 1em; background: #ccf; display: inline-block;">
+        Block all
+      </div>
+    </magnet-block>
+  </div>
+</magnet-pack>
 ```
 
-> _Alias_
->
-> #### .setAttractable(enabled)
->
-> ```js
-> magnet.setAttractable(true); // set to true
-> ```
->
-> #### .getAttractable()
->
-> ```js
-> magnet.getAttractable(); // get true
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.attractable(enabled?)](#attractableenabled)
+### mg-cross-prevent
 
-### Allow `Ctrl` Key
-
-Allow to press `ctrl` key to be unattractable temporarily
-
-> _Default: `true`_
+> Type: **parent**
 >
-> **NOTICE: Pressing `ctrl` key makes group members unattractable, any magnet related event will not be triggered**
+> Default: **null**
 
-#### .allowCtrlKey(enabled?)
+Prevent `<magnet-block>` to cross specific targets on being dragged.
 
-Get/set allow ctrl key
+_**Currently only support `parent`**_
 
-```js
-magnet.allowCtrlKey(true); // set to allow ctrl key, return this
-magnet.allowCtrlKey(); // get: true
+| Name | Description |
+| :-: | :- |
+| parent | Not to go out of parent element |
+
+```html
+<!-- prevent children blocks to go out -->
+<magnet-pack
+  mg-attract-distance="15"
+  mg-align-to=""
+  mg-cross-prevent="parent"
+>
+  <div style="width: 500px; height: 300px; border: 1px solid #000">
+    <!-- align to parent inner -->
+    <magnet-block mg-align-to-parent="inner">
+      <div style="padding: 1em; background: #fcc; display: inline-block;">
+        Block inner
+      </div>
+    </magnet-block>
+    
+    <!-- align to parent center -->
+    <magnet-block mg-align-to-parent="center">
+      <div style="padding: 1em; background: #cfc; display: inline-block;">
+        Block center
+      </div>
+    </magnet-block>
+    
+    <!-- align to parent inner and center -->
+    <magnet-block mg-align-to-parent="inner|center">
+      <div style="padding: 1em; background: #ccf; display: inline-block;">
+        Block all
+      </div>
+    </magnet-block>
+  </div>
+</magnet-pack>
 ```
 
-> _Alias_
->
-> #### .setAllowCtrlKey(enabled)
->
-> ```js
-> magnet.setAllowCtrlKey(true); // set to true
-> ```
->
-> #### .getAllowCtrlKey()
->
-> ```js
-> magnet.getAllowCtrlKey(); // get true
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.allowCtrlKey(enabled?)](#allowctrlkeyenabled)
+## Events
 
-### Allow Drag Elements
+We defined custom events of actions for `<magnet-block>`:
 
-Allow to drag element by mouse/touch
+### Drag Events
 
-> _Default: `true`_
+Include actions relative to drag:
 
-#### .allowDrag(enabled?)
+| Name | Description |
+| :-: | :- |
+| [mg-start][mg-evt-start] | Start dragging |
+| [mg-move][mg-evt-move] | Move on dragging |
+| [mg-end][mg-evt-end] | End of dragging |
 
-Get/set allow drag
+`event.detail` of drag events:
 
-```js
-magnet.allowDrag(true); // set to allow drag, return this
-manget.allowDrag(); // get: true
-```
+| Name | Type | Description |
+| :-: | :-: | :- |
+| originEvent | _Event_ | Origin mouse/touch event |
+| last | [_BlockState_][mg-type-BlockState] | Info of last state |
 
-> _Alias_
->
-> #### .setAllowDrag(enabled)
->
-> ```js
-> magnet.setAllowDrag(true); // set to true
-> ```
->
-> #### .getAllowDrag()
->
-> ```js
-> magnet.getAllowDrag(); // get true
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.allowDrag(enabled?)](#allowdragenabled)
+#### mg-start
 
-### Use Relative Unit
+This event would be triggered when mouse/touch start of dragging.
 
-Use relative unit `%` or absolute unit `px`
+#### mg-move
 
-> _Default: `false`_
+Trigger on moving with dragging.
 
-#### .useRelativeUnit(enabled?)
+#### mg-end
 
-Get/set use relative unit
+When end of mouse/touch drag event.
 
 ```js
-magnet.useRelativeUnit(true); // set to use relative unit, return this
-magnet.useRelativeUnit(); // get: true
+const onMgMove = (evt) => {
+  console.log('mg-move', evt.detail);
+};
+const onMgEnd = ({ target, detail }) => {
+  target.removeEventListener('mg-move', onMgMove);
+  target.removeEventListener('mg-end', onMgEnd);
+
+  console.log('mg-end', detail);
+};
+
+const block = document.getElementById('block-id');
+
+block.addEventListener('mg-start', ({ target, detail }) => {
+  target.addEventListener('mg-move', onMgMove);
+  target.addEventListener('mg-end', onMgEnd);
+
+  console.log('mg-start', detail);
+});
 ```
 
-> _Alias_
->
-> #### .setUseRelativeUnit(enabled)
->
-> ```js
-> magnet.setUseRelativeUnit(true); // set to true
-> ```
->
-> ```js
-> magnet.getUseRelativeUnit(); // get true
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.useRelativeUnit(enabled?)](#userelativeunitenabled)
+### Attract Events
 
-### Alignments
+Define actions of attracting and being attracted.
 
-Magnet supports the following alignments:
+_**Some event can be canceled by calling `event.preventDefault()` and the default action would not execute.**_
 
-| _Type_ | _Description_ | _Default_ |
-| :-: | :- | :-: |
-| **outer** | align edges to other edges from outside | `true` |
-| **inner** | align edges to other edges from inside | `true` |
-| **center** | align middle x/y to other's middle x/y | `true` |
-| **parent center** | align middle x/y to parent's middle x/y | `false` |
+| Name | Cancelable | Description |
+| :-: | :-: | :- |
+| [mg-attract][mg-evt-attract] | yes | Someone is in range of sense |
+| [mg-attracted][mg-evt-attracted] | yes | In range of someone |
+| [mg-unattract][mg-evt-unattract] | yes | Away from sensed target |
+| [mg-unattracted][mg-evt-unattracted] | yes | Away from the range it last in |
+| [mg-attractmove][mg-evt-attractmove] | no | Someone has been in range and we still move |
+| [mg-attractedmove][mg-evt-attractedmove] | no | We have been in range of someone and it still moves |
 
-#### .align{[Prop](#alignments)}(enabled?)
+`event.detail` of drag events:
 
-Get/set enabled of alignment
+| Name | Type | Description |
+| :-: | :-: | :- |
+| attractSummary | [_MultiAttractResult_][mg-type-multiAttractResult] | Summary of attractions |
+| next | [_BlockState_][mg-type-BlockState] | Info of next state |
+
+#### mg-attract
+
+Trigger when a block gets a new position and there is someone in the range of [attract distance][mg-attr-attract-distance].
 
 ```js
-magnet.alignOuter(true); // set: align to element outside edges, return this
-magnet.alignInner(false); // set: align to element inside edges, return this
-magnet.alignCenter(true); // set: align to element middle line, return this
-magnet.alignParentCenter(false); // set: alien to parent element middle line, return this
-
-magnet.alignOuter(); // get: true
+block.addEventListener('mg-attract', (evt) => {
+  if (DONT_WANT_TO_ATTRACT) {
+    evt.preventDefault(); // not to attract someone
+  }
+});
 ```
 
-> _Alias_
->
-> #### .enabledAlign{[Prop](#alignments)}(enabled?)
->
-> ```js
-> magnet.enabledAlignOuter(true); // set to true
-> magnet.enabledAlignParentCenter(false); // set to false
->
-> magnet.enabledAlignOuter(); // get: true
-> magnet.enabledAlignParentCenter(); // get: false
-> ```
->
-> #### .setEnabledAlign{[Prop](#alignments)}(enabled)
->
-> ```js
-> magnet.setEnabledAlignOuter(true); // set to true
-> ```
->
-> #### .getEnabledAlign{[Prop](#alignments)}()
->
-> ```js
-> magnet.getEnabledAlignOuter(); // get true
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.align{Prop}(enabled?)](#alignpropenabled)
+#### mg-attracted
 
-### Align to Parent Inner Edges
-
-> _**CAUTION:**_
->
-> - _**Parent** may **NOT** be the **1st** `parentNode` of the current element_._
-> - _**Parent** is the **first matched** `parentNode` whose `style.position` is not `static`_
-> - _All the `top`/`left` **offset** of magnet members is based on the **parent** element_
-
-#### .stayInParent(enabled?)
-
-Force elements of group not to be out of the edge of parent element
-
-> _Default: `false`_
-
-Get/set stay inside of the parent
+When a block is in the range of someone's [attract distance][mg-attr-attract-distance].
 
 ```js
-magnet.stayInParent(true); // set: not to move outside of the parent element, return this
-magnet.stayInParent(); // get: true
+block.addEventListener('mg-attracted', (evt) => {
+  if (DONT_WANT_TO_BE_ATTRACTED) {
+    evt.preventDefault(); // not to be attracted by someone
+  }
+});
 ```
 
-> _Alias_
->
-> #### .stayInParentEdge(enabled?)
->
-> ```js
-> magnet.stayInParentEdge(true); // set to true
-> magnet.stayInParentEdge(); // get: true
-> ```
->
-> #### .stayInParentElem(enabled?)
->
-> ```js
-> magnet.stayInParentElem(true); // set to true
-> magnet.stayInParentElem(); // get true
-> ```
->
-> _Another alias_
->
-> #### .setStayInParent(enabled)
->
-> ```js
-> magnet.setStayInParent(true); // set to true
-> ```
->
-> #### .getStayInParent()
->
-> ```js
-> magnet.getStayInParent(); // get true
-> ```
->
-> _**jQuery**_
->
-> #### [$magnet.stayInParent(enabled?)](#stayinparentenabled)
+#### mg-unattract
+
+#### mg-unattracted
+
+#### mg-attractmove
+
+#### mg-attractedmove
+
+
+
+
+
+TODO:
+
+* inner alignment not check the nearer dragging point
+
+* walled blocks not show attract line when trying to break the wall
+
+* should change handleMagnetDragMove to a handler of judging attraction
+
+* preventDefault on attractmove and attractedmove, should do nothing?
+
+* preventDefault on unattract and unattracted, should keep attach on last target
+
+
+
+
+#### BlockState
+
+Define state of `<magnet-block>`:
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| offset | [_Point_][mg-type-point] | Offset from origin position |
+| rectangle | [_Rect_][mg-type-rect] | Rectangle info |
+| attraction | [_Attraction_][mg-type-attraction] | Attraction info |
+
+#### Point
+
+#### Rect
+
+#### Attraction
+
+#### MultiAttractResult
+
+
 
 ### Events of Magnet
 
@@ -1184,7 +1253,34 @@ Magnet.measure(rectA, rectB); // MeasureResult object
 [MIT](/LICENSE) Copyright @ Wan Wan
 
 
+[lastest-build]: https://github.com/lf2com/magnet.js/releases
+[lastest-js]: https://lf2com.github.io/magnet.js/magnet.min.js
 [browserify]: http://browserify.org/
 [uglifyjs]: https://github.com/mishoo/UglifyJS
 [demo-hello-block]: ./demo/hello-magnet-block.html
 [demo-hello-group]: ./demo/hello-magnet-group.html
+[magnet-block]: #magnet-block
+[magnet-pack]: #magnet-pack
+[magnet-attribute]: #attributes
+[mg-attr-disabled]: #mg-disabled
+[mg-attr-group]: #mg-group
+[mg-attr-unattractable]: #mg-unattractable
+[mg-attr-unmovable]: #mg-unmovable
+[mg-attr-attract-distance]: #mg-attract-disaance
+[mg-attr-align-to]: #mg-align-to
+[mg-attr-align-to-parent]: #mg-align-to-parent
+[mg-attr-cross-prevent]: #mg-cross-prevent
+[mg-evt-start]: #mg-start
+[mg-evt-move]: #mg-move
+[mg-evt-end]: #mg-end
+[mg-evt-attract]: #mg-attract
+[mg-evt-attractmove]: #mg-attractmove
+[mg-evt-unattract]: #mg-unattract
+[mg-evt-attracted]: #mg-attracted
+[mg-evt-attractedmove]: #mg-attractedmove
+[mg-evt-unattracted]: #mg-unattracted
+[mg-type-blockState]: #blockState
+[mg-type-point]: #point
+[mg-type-rect]: #rect
+[mg-type-attraction]: #attraction
+[mg-type-multiAttractResult]: #multiAttractResult

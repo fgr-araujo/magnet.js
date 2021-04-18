@@ -48,7 +48,7 @@ export enum AlignTos {
   outer = 'outer',
   inner = 'inner',
   center = 'center',
-  outerline = 'outerline',
+  extend = 'extend',
 }
 export enum AlignToParents {
   inner = 'inner',
@@ -124,7 +124,7 @@ const DEF_ALIGN_TO: Array<AlignTos> = [
   AlignTos.outer,
   AlignTos.inner,
   AlignTos.center,
-  AlignTos.outerline,
+  AlignTos.extend,
 ];
 const DEF_ALIGN_TO_PARENT: Array<AlignToParents> = [
   // AlignToParents.inner,
@@ -178,7 +178,7 @@ export default class Base extends HTMLElement {
     outer: AlignTos.outer,
     inner: AlignTos.inner,
     center: AlignTos.center,
-    outerline: AlignTos.outerline,
+    extend: AlignTos.extend,
   })
 
   /**
@@ -284,7 +284,9 @@ export default class Base extends HTMLElement {
 
     while (parent) {
       if (parent instanceof Base) {
-        if (!isstr(group) || parent.group === group) {
+        const parentGroup = parent.group;
+
+        if (!isstr(group) || !isstr(parentGroup) || parentGroup === group) {
           return parent;
         }
       }
@@ -421,7 +423,7 @@ export default class Base extends HTMLElement {
       detail,
       composed = false,
       cancelable = true,
-      bubbles = false,
+      bubbles = true,
     // eslint-disable-next-line no-undef
     }: CustomEventInit = {},
   ): boolean {
