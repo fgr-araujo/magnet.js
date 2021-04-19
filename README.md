@@ -579,13 +579,35 @@ block.addEventListener('mg-attracted', (evt) => {
 
 #### mg-unattract
 
+Fire on going away from someone we just attracted to.
+
+```js
+block.addEventListener('mg-unattract', (evt) => {
+  if (DONT_WANT_TO_UNATTRACT) {
+    evt.preventDefault(); // not to unattract someone
+  }
+});
+```
+
 #### mg-unattracted
+
+Trigger when we are outside the range of someone's attraction.
+
+```js
+block.addEventListener('mg-unattracted', (evt) => {
+  if (DONT_WANT_TO_BE_UNATTRACTED) {
+    evt.preventDefault(); // not to be unattracted by someone
+  }
+});
+```
 
 #### mg-attractmove
 
+Happen on we are attracting someone and we still on moving.
+
 #### mg-attractedmove
 
-
+For the duration of someone is attracting us and it's moving.
 
 
 
@@ -602,9 +624,26 @@ TODO:
 * preventDefault on unattract and unattracted, should keep attach on last target
 
 
+## Types
 
+### Rect
 
-#### BlockState
+`Rect` is a class describing rectangle info and has the following members:
+
+_**All values `Rect` are read only. The only values we can change are `(x, y)` by calling `rect.moveTo(newX, newY)` or `rect.offset(diffX, diffY)`.**_
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| top | _number_ | Top of rectangle |
+| right | _number_ | Right of rectangle |
+| bottom | _number_ | Bottom of rectangle |
+| left | _number_ | Left of rectangle |
+| width | _number_ | Width of rectangle |
+| height | _number_ | Height of rectangle |
+| x | _number_ | Same as `left` |
+| y | _number_ | Same as `top` |
+
+### BlockState
 
 Define state of `<magnet-block>`:
 
@@ -614,247 +653,16 @@ Define state of `<magnet-block>`:
 | rectangle | [_Rect_][mg-type-rect] | Rectangle info |
 | attraction | [_Attraction_][mg-type-attraction] | Attraction info |
 
-#### Point
+### Point
 
-#### Rect
+### Rect
 
-#### Attraction
+### Attraction
 
-#### MultiAttractResult
+### MultiAttractResult
 
 
 
-### Events of Magnet
-
-Magnet supports the following events:
-
-| _Name_ | _Description_ | _Alias_ |
-| :-: | :- | :-: |
-| **magnetstart** | when the last result has no any attract but now it does | `start`, `magnetenter`, `enter` |
-| **magnetend** | when the last result has any attract but now it doesn't | `end`, `magnetleave`, `leave` |
-| **magnetchange** | when any change of attract, including start/end and the changes of attracted alignment properties | `change` |
-
-#### Arguments of Magnet Event
-
-Each event has the following members in the detail of event object:
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **source** | _DOM_ | HTML element that is dragged |
-| **x** | _Object_ | [Attract info](#attract-info) of x-axis, `null` if no attract |
-| **y** | _Object_ | [Attract info](#attract-info) of y-axis, `null` if no attract |
-
-#### .on(eventNames, functions)
-
-Add event listener
-
-```js
-magnet.on('magnetenter', function(evt) {
-  let detail = evt.detail;
-  console.log('magnetenter', detail); // detail info of attract elements
-  console.log('source', detail.source); // current HTML element
-  console.log('targets', detail.x, detail.y); // current attracted of both axises
-});
-
-magnet.on('magnetleave', function(evt) {
-  let detail = evt.detail;
-  console.log('magnetleave', detail);
-  console.log('source', detail.source);
-  console.log('targets', detail.x, detail.y); // the last attracted of both axises
-});
-
-magnet.on('magnetchange', function(evt) {
-  let detail = evt.detail;
-  console.log('magnetchange', detail);
-  console.log('source', detail.source);
-  console.log('targets', detail.x, detail.y); // the newest attracted of both axises
-});
-
-// the same as above
-magnet.on('magnetstart', function(evt) {
-  // do something
-}).on('magnetchange', function(evt) {
-  // do something
-}).on('magnetend', function(evt) {
-  // do something
-});
-```
-
-> _**jQuery**_
->
-> #### [$magnet.on(eventNames, functions)](#oneventnames-functions)
-
-#### .off(eventNames)
-
-Remove event listeners
-
-```js
-magnet.off('magnetenter magnetleave magnetchange'); // remove event listeners
-
-// the same as above
-magnet
-  .off('magnetenter')
-  .off('magnetleave')
-  .off('magnetchange');
-```
-
-> _**jQuery**_
->
-> #### [$magnet.off(eventNames)](#offeventnames)
-
-### Events of magnet members
-
-Magnet members supports the following events:
-
-| _Name_ | _Target_ | _description_ |
-| :-: | :-: | :- |
-| [**attract**](#arguments-of-attractunattract) | forcused | Attract to other members |
-| [**unattract**](#arguments-of-attractunattract) | focused | Unattract from other members |
-| [**attracted**](#arguments-of-attractedunattracted) | others | Attracted by the focused member |
-| [**unattracted**](#arguments-of-attractedunattracted) | others | Unattracted by the focused member |
-| [**attractstart**](#arguments-of-attractstartattractend) | focused | Start of dragging |
-| [**attractend**](#arguments-of-attractstartattractend) | focused | End of dragging |
-| [**attractmove**](#arguments-of-attractmove) | focused | Moving of dragging |
-
-#### Arguments of `attract`/`unattract`
-
-Events of `attract` and `unattract` have the following members in the detail of event object:
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **x** | _Object_ | [Attract info](#attract-info) of x-axis, `null` if no attract |
-| **y** | _Object_ | [Attract info](#attract-info) of y-axis, `null` if no attract |
-
-```js
-let elem = document.querySelector('.block');
-magnet.add(elem);
-
-function onAttract(evt) {
-  let detail = evt.detail;
-  console.log('attract', detail); // detail info of attract elements
-  console.log('targets', detail.x, detail.y); // current attracted of both axises
-}
-function onUnattract(evt) {
-  let detail = evt.detail;
-  console.log('unattract', detail);
-  console.log('targets', detail.x, detail.y); // the last attracted of both axises
-}
-
-// add event listener
-elem.addEventListener('attract', onAttract);
-elem.addEventListener('unattract', onUnattract);
-
-// remove event listener
-elem.removeEventListener('attract', onAttract);
-elem.removeEventListener('unattract', onUnattract);
-```
-
-> _**jQuery**_
->
-> ```js
-> // the same as above
-> $(elem)
->   .on('attract', onAttract)
->   .on('unattract', onUnattract);
->
-> $(elem)
->   .off('attract unattract');
-> ```
-
-#### Arguments of `attracted`/`unattracted`
-
-Events of `attracted` and `unattracted` have the target member in the detail of event object
-
-```js
-function onAttracted(evt) {
-  let dom = evt.detail;
-  console.log('attracted', dom); // be attracted by dom
-}
-function onUnattracted(evt) {
-  let dom = evt.detail;
-  console.log('unattracted', dom); // be unattracted by dom
-}
-
-// add event listener
-elem.addEventListener('attracted', onAttracted);
-elem.addEventListener('unattracted', onUnattracted);
-
-// remove event listener
-elem.removeEventListener('attracted', onAttracted);
-elem.removeEventListener('unattracted', onUnattracted);
-```
-
-> _**jQuery**_
->
-> ```js
-> // the same as above
-> $(elem)
->   .on('attracted', onAttracted)
->   .on('unattracted', onUnattracted);
->
-> $(elem).off('attracted unattracted');
-> ```
-
-#### Arguments of `attractstart`/`attractend`
-
-```js
-function onAttractStart(evt) {
-  let rect = evt.detail;
-  console.log('attract start', rect); // rectangle of dom
-}
-function onAttractEnd(evt) {
-  let rect = evt.detail;
-  console.log('attract end', rect); // rectangle of dom
-}
-
-// add event listener
-elem.addEventListener('attractstart', onAttractStart);
-elem.addEventListener('attractend', onAttractEnd;
-
-// remove event listener
-elem.removeEventListener('attractstart', onAttractStart);
-elem.removeEventListener('attractend', onAttractEnd
-```
-
-> _**jQuery**_
->
-> ```js
-> // the same as above
-> $(elem)
->   .on('attractstart', onAttractStart)
->   .on('attractend', onAttractEnd);
->
-> $(elem).off('attractstart attractend');
-> ```
-
-#### Arguments of `attractmove`
-
-> **NOTICE: Call `preventDefault()` to ignore attraction if need**
-
-```js
-function onAttractMove(evt) {
-  let { rects, attracts } = evt.detail;
-  let { origin, target } = rects;
-  let { current, last } = attracts;
-  
-  // do something
-  // ...
-
-  evt.preventDefault(); // call this to ignore attraction if need
-}
-
-elem.addEventListener('attractmove', onAttractMove); // add event listener
-elem.removeEventListener('attractmove', onAttractMove); // remove event listener
-```
-
-> _**jQuery**_
->
-> ```js
-> // the same as above
-> $(elem).on('attractmove', onAttractMove);
->
-> $(elem).off('attractmove');
-> ```
 
 ### Check Attracting Result
 
@@ -935,218 +743,6 @@ let { top, right, bottom, left } = elem.getBoundingClientRect();
 
 magnet.setMemberRectangle(elem, rect);
 ```
-
-### Before/After/Do Applying Rectangle Position
-
-The group passes the info to target function before/after/do applying the change to target element
-
-> **NOTICE: The function will be called with [rectangle infos](#rectangle-infos) and [attract infos](#attract-infos) as long as dragging the target element**
-
-#### Rectangle Infos
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **origin** | _Object_ | Origin [rectangle object](#rectangle-object) |
-| **target** | _Object_ | Target [rectangle object](#rectangle-object) |
-
-#### Attract Infos
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **current** | _Object_ | Current [attract info](#attract-info)s of x/y axises |
-| **last** | _Object_ | Last [attract info](#attract-info)s of x/y axises |
-
-#### .beforeAttract = function(targetDom rectangleInfos, attractInfos)
-
-Set to a function for confirming the change
-
-| _Value_ | _Description_ |
-| :-: | :- |
-| `false` | Apply the original rectangle without attraction |
-| `rectangle` | [Rectangle object](#rectangle-object) to apply on the target element |
-
-```js
-function beforeAttractFunc(dom, { origin, target }, { current, last }) {
-  console.log(this); // manget
-
-  if (MAKE_SOME_CHANGES) {
-    // apply other rectangle info
-    return {
-      top: (target.top - 1),
-      right: (target.right + 1),
-      bottom: (target.bottom + 1),
-      left: (target.left - 1),
-    };
-  } else if (NO_ATTRACTION) {
-    return false; // ignore attraction
-  } else if (STILL_NO_ATTRACTION) {
-    return origin; // the same as no attraction
-  }
-
-  // if went here, it would apply default change
-};
-
-magnet.beforeAttract = beforeAttractFunc; // set function
-console.log(magnet.beforeAttract); // print function
-
-magnet.beforeAttract = null; // unset function
-```
-
-> _**jQuery**_
->
-> #### [$magnet.beforeAttract(function(targetDom, rectangleInfos, attractInfos)?)](#beforeattract--functiontargetdom-rectangleinfos-attractinfos)
->
-> ```js
-> $magnet.beforeAttract(beforeAttractFunc); // set function
-> $magnet.beforeAttract(); // get beforeAttractFunc
->
-> $magnet.beforeAttract(null); // unset function (input non-function value)
-> ```
-
-#### .doAttract = function(targetDom, rectangleInfos, attractInfos)
-
-Set the displacement handly which means the user has to set the style of DOM to apply the position change if need
-
-```js
-magnet.doAttract = function(dom, { origin, target }, { current, last }) {
-  const { top, right, bottom, left } = origin;
-  const { x, y } = current;
-  const px = (p) => `${p}px`;
-
-  if (x && y && x.element === y.element) {
-    // attract current targets
-    const elem = x.element;
-    const { width, height } = x.rect;
-    const move = (type) => {
-      switch (type) {
-        case 'topToTop': return elem.style.top = px(top);
-        case 'rightToRight': return elem.style.left = px(right-width);
-        case 'bottomToBottom': return elem.style.top = px(bottom-height);
-        case 'leftToLeft': return elem.style.left = px(left);
-        case 'topToBottom': return elem.style.top = px(top-height);
-        case 'bottomToTop': return elem.style.top = px(bottom);
-        case 'rightToLeft': return elem.style.left = px(right);
-        case 'LeftToRight': return elem.style.left = px(left-width);
-        case 'xCenter': return elem.style.left = px((right+left-width)/2);
-        case 'yCenter': return elem.style.top = px((top+bottom-height)/2);
-      }
-    }
-    move(x.type);
-    move(y.type);
-  }
-
-  // keep original position
-  dom.style.top = px(top);
-  dom.style.left = px(left);
-});
-```
-
-> _**jQuery**_
->
-> #### [$magnet.doAttract(function(targetDom, rectangleInfos, attractInfos)?)](#doattract--functiontargetdom-rectangleinfos-attractinfos)
-
-#### .afterAttract = function(targetDom, rectangleInfos, attractInfos)
-
-See what changed after attracting
-
-> _**jQuery**_
->
-> #### [$magnet.afterAttract(function(targetDom, rectangleInfos, attractInfos)?)](#afterattract--functiontargetdom-rectangleinfos-attractinfos)
-
-## Usage of Rectangle
-
-### Check Rectangle
-
-#### Magnet.isRect(rect)
-
-Check if `rect` is a rectangle like object with the following object members and rules:
-
-| _Property_ | _Rule_ |
-| :-: | :-: |
-| **top** | `<= bottom` |
-| **right** | `>= left` |
-| **bottom** | `>= top` |
-| **left** | `<= right` |
-| **width** | `= right - left` |
-| **height** | `= bottom - top` |
-| **x** _(optional)_ | `= left` |
-| **y** _(optional)_ | `= top` |
-
-> **NOTICE: Default use `0.0000000001` for bias of calculation**
-
-```js
-let rect = { top: 1, right: 2, bottom: 3, left: 4 };
-Magnet.isRect(rect); // false: right < left
-rect.right = 5;
-Magnet.isRect(rect); // true
-
-rect.x = 3;
-Magnet.isRect(rect); // false: x != left
-rect.x = rect.left;
-
-rect.width = 2;
-Magnet.isRect(rect); // false: width != (right - left)
-```
-
-### Standardize Rectangle
-
-#### Magnet.stdRect(rect)
-
-Return a [rectangle object](#rectangle-object) if `rect` is a HTML element or a valid rectangle like object:
-
-| _Property_ | _Rule_ |
-| :-: | :- |
-| **top** | Inherit from `rect` |
-| **right** | Inherit from `rect` |
-| **bottom** | Inherit from `rect` |
-| **left** | Inherit from `rect` |
-| **width** | Inherit from `rect` or set to `right - left` |
-| **height** | Inherit from `rect` or set to `bottom - top` |
-| **x** | Inherit from `rect` or set to `left` |
-| **y** | Inherit from `rect` or set to `top` |
-
-```js
-Magnet.stdRect(rect); // get a rectangle object
-```
-
-### Measure Distance between Rectangles
-
-#### Magnet.measure(source, target[, options])
-
-Measure distance between 2 elements/rectangles
-
-#### Options
-
-Options of measurement:
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **alignments** | _Array_ | Array of [alignment properties](#alignment-properties). Default is **ALL** alignment properties |
-| **absDistance** | _Boolean_ | `false` to allow negative value of distance. Default is `true` |
-
-```javascript
-let rectA = { top: 0, right: 3, bottom: 1, left: 2 };
-let rectB = { top: 10, right: 13, bottom: 11, left: 12 };
-Magnet.measure(rectA, rectB); // MeasureResult object
-```
-
-> _Alias_
->
-> #### Magnet.diffRect(source, target[, options])
->
-> ```js
-> Magnet.diffRect(rectA, rectB);
-> ```
-
-#### Result of Measurement
-
-> See [measurement result object](#measurement-result-object)
-
-### _DEPRECATED_ Methods
-
-#### Magnet.nearby(...)
-
-> To reduce the usless calculations of measurement, it's recommended to call `Magnet.measure`/`Magnet.diffRect` independently and handle the results handly to get what you really want.
 
 ## References
 
