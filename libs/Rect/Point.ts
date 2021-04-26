@@ -1,6 +1,10 @@
 import { isnum } from '../stdlib';
 import Rect from './Rect';
 
+export type PointLike = {
+  x: number;
+  y: number;
+};
 export default class Point {
   #x = NaN;
 
@@ -59,5 +63,15 @@ export default class Point {
    */
   clone(): Point {
     return new Point(this.x, this.y);
+  }
+
+  /**
+   * Convert to object
+   */
+  toObject(): PointLike {
+    return {
+      x: this.x,
+      y: this.y,
+    };
   }
 }

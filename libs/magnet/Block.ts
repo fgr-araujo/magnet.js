@@ -1,12 +1,12 @@
-import { Pack, RectableSource } from '../Rect';
+import { Pack, RectableSource, toRect } from '../Rect';
 import Point from '../Rect/Point';
 import Rect from '../Rect/Rect';
 import {
   getStyle,
-  isnull, isset, isstr,
+  isnull, isnum, isset, isstr,
   objValues, toarray, toint, tonum, tostr,
 } from '../stdlib';
-import Base, { Alignments, Attributes } from './Base';
+import Base, { Attributes } from './Base';
 import {
   OnJudgeOptions, OnJudgeDistance, OnJudgeAttractSummary,
   calcAttraction, CalcAttractionOption, CalcAttractionResult,
@@ -25,6 +25,8 @@ import {
 const EVENT_DRAGSTART = ['mousedown', 'touchstart'];
 const EVENT_DRAGMOVE = ['mousemove', 'touchmove'];
 const EVENT_DRAGEND = ['mouseup', 'touchend'];
+
+const dragPassData = new WeakMap<Base, MagnetEventParams>();
 
 // style properties
 export enum Styles {
@@ -49,11 +51,11 @@ export default class Block extends Base {
   /**
    * Calculate attraction from {source} to {target}
    */
-  static calcAttraction(
+  static calcMagnetAttraction(
     source: RectableSource,
     target: RectableSource,
     {
-      alignments = objValues(this.ALIGNMENT),
+      alignments = objValues(this.MAGNET_ALIGNMENT),
       absDistance = true,
       ...options
     }: CalcAttractionOption = {},
@@ -74,11 +76,11 @@ export default class Block extends Base {
   /**
    * Calculate attractions from {source} to multiple targets
    */
-  static calcMultiAttractions(
+  static calcMagnetMultiAttractions(
     source: RectableSource,
     targets: Array<RectableSource> = [],
     {
-      alignments = objValues(this.ALIGNMENT),
+      alignments = objValues(this.MAGNET_ALIGNMENT),
       absDistance = true,
       ...options
     }: CalcMultiAttractionsOption,
@@ -105,17 +107,17 @@ export default class Block extends Base {
         break;
 
       case Attributes.disabled:
-        if (this.disabled) {
+        if (this.mgDisabled) {
           removeEventListener(this, EVENT_DRAGSTART, this.handleMagnetDragStart);
-        } else if (!this.unmovable) {
+        } else if (!this.mgUnmovable) {
           addEventListener(this, EVENT_DRAGSTART, this.handleMagnetDragStart);
         }
         break;
 
       case Attributes.unmovable:
-        if (this.unmovable) {
+        if (this.mgUnmovable) {
           removeEventListener(this, EVENT_DRAGSTART, this.handleMagnetDragStart);
-        } else if (!this.disabled) {
+        } else if (!this.mgDisabled) {
           addEventListener(this, EVENT_DRAGSTART, this.handleMagnetDragStart);
         }
         break;
@@ -126,7 +128,9 @@ export default class Block extends Base {
    * Get attractable magnets
    */
   getMagnetTargets(): Array<Block> {
-    const { group } = this;
+    const {
+      mgGroup: group,
+    } = this;
     const nodeName = this.localName;
     const notDisabledSelector = `:not([${Attributes.disabled}])`;
     const notUnattractableSelector = `:not([${Attributes.unattractable}])`;
@@ -136,7 +140,7 @@ export default class Block extends Base {
     ) as Array<Block>;
 
     return magnets.filter((magnet) => {
-      if (isstr(group) && group !== magnet.group) {
+      if (isstr(group) && group !== magnet.mgGroup) {
         return false;
       }
 
@@ -147,23 +151,23 @@ export default class Block extends Base {
   /**
    * Calculate attraction to {target}
    */
-  calcAttraction(
+  calcMagnetAttraction(
     target: RectableSource,
     options: CalcAttractionOption,
     attachOptions: OnJudgeOptions,
   ): CalcAttractionResult {
-    return Block.calcAttraction(this, target, options, attachOptions);
+    return Block.calcMagnetAttraction(this, target, options, attachOptions);
   }
 
   /**
    * Calculate attractions to multiple targets
    */
-  calcMultiAttractions(
+  calcMagnetMultiAttractions(
     targets: Array<RectableSource>,
     options: CalcAttractionOption,
     attachOptions: OnJudgeOptions,
   ): CalcMultiAttractionsResult {
-    return Block.calcMultiAttractions(
+    return Block.calcMagnetMultiAttractions(
       this,
       targets,
       options,
@@ -174,7 +178,7 @@ export default class Block extends Base {
   /**
    * Judge if {distance} is acceptable
    */
-  judgeDistance: OnJudgeDistance = (distance, targetPack, srcPack, options) => {
+  judgeMagnetDistance: OnJudgeDistance = (distance, targetPack, srcPack, options) => {
     const { absVal } = distance;
     const { attractDistance } = options;
 
@@ -199,35 +203,35 @@ export default class Block extends Base {
         default:
           return false; // unknown alignment
 
-        case Block.ALIGNMENT.topToTop:
-        case Block.ALIGNMENT.topToBottom:
+        case Block.MAGNET_ALIGNMENT.topToTop:
+        case Block.MAGNET_ALIGNMENT.topToBottom:
           if (parentRect.top > srcRect.top + rawVal) {
             return false;
           }
           break;
 
-        case Block.ALIGNMENT.rightToRight:
-        case Block.ALIGNMENT.rightToLeft:
+        case Block.MAGNET_ALIGNMENT.rightToRight:
+        case Block.MAGNET_ALIGNMENT.rightToLeft:
           if (parentRect.right < srcRect.right + rawVal) {
             return false;
           }
           break;
 
-        case Block.ALIGNMENT.bottomToTop:
-        case Block.ALIGNMENT.bottomToBottom:
+        case Block.MAGNET_ALIGNMENT.bottomToTop:
+        case Block.MAGNET_ALIGNMENT.bottomToBottom:
           if (parentRect.bottom < srcRect.bottom + rawVal) {
             return false;
           }
           break;
 
-        case Block.ALIGNMENT.leftToLeft:
-        case Block.ALIGNMENT.leftToRight:
+        case Block.MAGNET_ALIGNMENT.leftToLeft:
+        case Block.MAGNET_ALIGNMENT.leftToRight:
           if (parentRect.left > srcRect.left + rawVal) {
             return false;
           }
           break;
 
-        case Alignments.xCenterToXCenter:
+        case Block.MAGNET_ALIGNMENT.xCenterToXCenter:
           if (
             parentRect.right < srcRect.right + rawVal
             || parentRect.left > srcRect.left + rawVal
@@ -236,7 +240,7 @@ export default class Block extends Base {
           }
           break;
 
-        case Alignments.yCenterToYCenter:
+        case Block.MAGNET_ALIGNMENT.yCenterToYCenter:
           if (
             parentRect.top > srcRect.top + rawVal
             || parentRect.bottom < srcRect.bottom + rawVal
@@ -259,14 +263,14 @@ export default class Block extends Base {
       default:
         return true; // unknown alignment
 
-      case Block.ALIGNMENT.xCenterToXCenter:
-      case Block.ALIGNMENT.yCenterToYCenter:
+      case Block.MAGNET_ALIGNMENT.xCenterToXCenter:
+      case Block.MAGNET_ALIGNMENT.yCenterToYCenter:
         return true;
 
-      case Block.ALIGNMENT.rightToRight:
-      case Block.ALIGNMENT.leftToLeft:
-      case Block.ALIGNMENT.rightToLeft:
-      case Block.ALIGNMENT.leftToRight:
+      case Block.MAGNET_ALIGNMENT.rightToRight:
+      case Block.MAGNET_ALIGNMENT.leftToLeft:
+      case Block.MAGNET_ALIGNMENT.rightToLeft:
+      case Block.MAGNET_ALIGNMENT.leftToRight:
       {
         const {
           top: srcTop,
@@ -287,10 +291,10 @@ export default class Block extends Base {
         return false;
       }
 
-      case Block.ALIGNMENT.topToTop:
-      case Block.ALIGNMENT.bottomToBottom:
-      case Block.ALIGNMENT.topToBottom:
-      case Block.ALIGNMENT.bottomToTop:
+      case Block.MAGNET_ALIGNMENT.topToTop:
+      case Block.MAGNET_ALIGNMENT.bottomToBottom:
+      case Block.MAGNET_ALIGNMENT.topToBottom:
+      case Block.MAGNET_ALIGNMENT.bottomToTop:
       {
         const {
           right: srcRight,
@@ -317,15 +321,15 @@ export default class Block extends Base {
    * Judge if {summary} is acceptable
    */
   // eslint-disable-next-line class-methods-use-this
-  judgeAttractSummary: OnJudgeAttractSummary = (summary) => (
+  judgeMagnetAttractSummary: OnJudgeAttractSummary = (summary) => (
     isset(summary.best.any)
   )
 
   /**
    * Judge if {distance} of {parent} is acceptable
    */
-  judgeParentDistance: OnJudgeDistance = (...args) => (
-    this.judgeDistance(...args)
+  judgeMagnetParentDistance: OnJudgeDistance = (...args) => (
+    this.judgeMagnetDistance(...args)
   )
 
   /**
@@ -338,161 +342,86 @@ export default class Block extends Base {
   }
 
   /**
-   * Move position to (x, y) (unit: px)
+   * Last offset
    */
-  handleMagnetOffset(ref: Point | number, y: number): void {
+  getLastMagnetOffset(): Point {
+    return new Point(
+      tonum(this.style.getPropertyValue(Styles.offsetX) || 0),
+      tonum(this.style.getPropertyValue(Styles.offsetY) || 0),
+    );
+  }
+
+  /**
+   * Move offset to (x + dx, y + dy) (unit: px)
+   */
+  handleMagnetOffset(ref: Point | number, dy?: number): void {
     if (Point.isPoint(ref)) {
       this.style.setProperty(Styles.offsetX, `${ref.x}px`);
       this.style.setProperty(Styles.offsetY, `${ref.y}px`);
+
+      return;
+    }
+    if (!isnum(dy)) {
+      throw new ReferenceError('Must assign y');
+    }
+
+    const dx = ref as number;
+
+    this.style.setProperty(Styles.offsetX, `${dx}px`);
+    this.style.setProperty(Styles.offsetY, `${dy}px`);
+  }
+
+  /**
+   * Move offset to (x, y) (unit: px)
+   */
+  handleMagnetPosition(ref: Point | number, y?: number): void {
+    const { left, top } = toRect(this);
+
+    if (Point.isPoint(ref)) {
+      return this.handleMagnetOffset(ref.x - left, ref.y - top);
+    }
+    if (!isnum(y)) {
+      throw new ReferenceError('Must assign y');
     }
 
     const x = ref as number;
 
-    this.style.setProperty(Styles.offsetX, `${x}px`);
-    this.style.setProperty(Styles.offsetY, `${y}px`);
+    return this.handleMagnetOffset(x - left, y - top);
   }
 
   /**
-   * Handler of dragging start
+   * Move position basing on attraction of (x, y)
    */
-  handleMagnetDragStart(evt: Event): void {
-    if (this.disabled || this.unmovable) {
-      // no action if it's disabled/unmovable
-      return;
-    }
-
+  handleMagnetPositionWithAttract(
+    x: number,
+    y: number,
+    data?: MagnetEventParams,
+  ): CalcMultiAttractionsResult | undefined {
     const {
-      position,
-      zIndex,
-      transform,
-    } = getStyle(this);
-    const {
-      disabled, unattractable, unmovable,
-      group, alignTo, alignToParent, crossPrevent, attractDistance,
-      parentElement,
-    } = this;
-    const lastOffset = new Point(
-      tonum(this.style.getPropertyValue(Styles.offsetX) || 0),
-      tonum(this.style.getPropertyValue(Styles.offsetY) || 0),
-    );
-    const self = new Pack(this);
-    const parent = (isnull(parentElement)
-      ? undefined
-      : new Pack(parentElement)
-    );
-    const crossPreventParent = crossPrevent.includes(Block.CROSS_PREVENT.parent);
-    const alignToExtend = alignTo.includes(Block.ALIGN_TO.extend);
+      crossPreventParent = this.mgCrossPrevent.includes(Block.MAGNET_CROSS_PREVENT.parent),
+      alignments = Block.getMagnetAlignmentsOfAlignTo(this.mgAlignTo),
+      parentAlignments = Block.getMagnetAlignmentsOfAlignTo(this.mgAlignToParent),
+      onJudgeDistance = this.judgeMagnetDistance.bind(this),
+      onJudgeAttractSummary = this.judgeMagnetAttractSummary.bind(this),
+      onJudgeParentDistance = this.judgeMagnetParentDistance.bind(this),
+      unattractable = this.mgUnattractable,
+      parent = (isnull(this.parentElement) ? undefined : new Pack(this.parentElement)),
+      targets = this.getMagnetTargets()
+        .map((target) => new Pack(target)),
+      self = new Pack(this),
+      lastOffset = this.getLastMagnetOffset(),
+      lastAttractSummary,
+      attachOptions: {
+        attractDistance = this.mgAttractDistance,
+        alignToExtend = this.mgAlignTo.includes(Block.MAGNET_ALIGN_TO.extend),
+      } = {},
+    } = data || {};
     const attachOptions = {
       attractDistance,
       alignToExtend,
       crossPreventParent,
       parentPack: parent,
     };
-    const data: MagnetEventParams = {
-      attractDistance,
-      alignTo,
-      alignToOuter: alignTo.includes(Block.ALIGN_TO.outer),
-      alignToInner: alignTo.includes(Block.ALIGN_TO.inner),
-      alignToCenter: alignTo.includes(Block.ALIGN_TO.center),
-      alignToExtend: alignTo.includes(Block.ALIGN_TO.extend),
-      alignToParent,
-      alignToParentInner: alignToParent.includes(Block.ALIGN_TO_PARENT.inner),
-      alignToParentCenter: alignToParent.includes(Block.ALIGN_TO_PARENT.center),
-      crossPrevent,
-      crossPreventParent,
-      alignments: Block.getAlignmentsOfAlignTo(alignTo),
-      parentAlignments: Block.getAlignmentsOfAlignTo(alignToParent),
-      onJudgeDistance: this.judgeDistance.bind(this),
-      onJudgeAttractSummary: this.judgeAttractSummary.bind(this),
-      onJudgeParentDistance: this.judgeParentDistance.bind(this),
-      disabled,
-      group,
-      unattractable,
-      unmovable,
-      parent,
-      targets: this.getMagnetTargets()
-        .map((target) => new Pack(target)),
-      self,
-      originStyle: {
-        position,
-        zIndex,
-        transform,
-      },
-      startXY: getEvtClientXY(evt),
-      lastOffset,
-      attachOptions,
-    };
-
-    let tempStore: MagnetEventParams = data;
-
-    if (this.triggerMagnetEvent(Block.EVENT.start, generateDragEventDetail(evt, tempStore))) {
-      return;
-    }
-
-    const onMove = (e: Event): void => {
-      if (this.triggerMagnetEvent(Block.EVENT.move, generateDragEventDetail(e, tempStore))) {
-        return;
-      }
-
-      tempStore = this.handleMagnetDragMove(e, tempStore);
-    };
-    const onEnd = (e: Event): void => {
-      if (this.triggerMagnetEvent(Block.EVENT.end, generateDragEventDetail(e, tempStore))) {
-        return;
-      }
-
-      this.handleMagnetDragEnd(e, tempStore);
-
-      removeEventListener(window, EVENT_DRAGMOVE, onMove);
-      removeEventListener(window, EVENT_DRAGEND, onEnd);
-    };
-
-    evt.preventDefault();
-    evt.stopImmediatePropagation();
-
-    // initialize position base
-    switch (position) {
-      case 'relative':
-      case 'fixed':
-      case 'absolute':
-        break;
-
-      default:
-        this.style.setProperty('position', 'relative');
-        break;
-    }
-
-    // move block to top
-    this.style.setProperty('z-index', tostr(toint(Date.now() / 1000)));
-
-    // TODO: combine with original transform?
-    this.style.setProperty('transform', `translate(var(${Styles.offsetX}), var(${Styles.offsetY}))`, 'important');
-
-    addEventListener(window, EVENT_DRAGMOVE, onMove);
-    addEventListener(window, EVENT_DRAGEND, onEnd);
-    tempStore = this.handleMagnetDragMove(evt, tempStore);
-  }
-
-  /**
-   * Handler of dragging move
-   */
-  handleMagnetDragMove(evt: Event, data: MagnetEventParams): MagnetEventParams {
-    const {
-      crossPreventParent,
-      alignments,
-      parentAlignments,
-      onJudgeDistance,
-      onJudgeAttractSummary,
-      onJudgeParentDistance,
-      unattractable,
-      parent,
-      targets,
-      self,
-      startXY,
-      lastOffset,
-      lastAttractSummary,
-      attachOptions,
-    } = data;
     const {
       rectangle: selfRect,
     } = self;
@@ -505,13 +434,7 @@ export default class Block extends Base {
       width: selfWidth,
       height: selfHeight,
     } = selfRect;
-    const currXY = getEvtClientXY(evt);
-    const currOffset = new Point(
-      currXY.x - startXY.x,
-      currXY.y - startXY.y,
-    );
-    const oriRect = new Rect(selfRect).offset(currOffset);
-    const currRect = new Rect(oriRect);
+    const currRect = new Rect(selfRect).moveTo(x, y);
 
     if (crossPreventParent && parentRect) {
       // prevent from going out of parent edges
@@ -544,15 +467,15 @@ export default class Block extends Base {
       }
 
       // check current attracted targets
-      currAttractSummary = Block.calcMultiAttractions(
-        currRect,
+      currAttractSummary = Block.calcMagnetMultiAttractions(
+        new Pack(this, currRect),
         targets,
         {
           alignments,
           onJudgeDistance,
           onJudgeAttractSummary,
           bindAttraction: (parentAlignments.length > 0 && parent
-            ? Block.calcAttraction(
+            ? Block.calcMagnetAttraction(
               currRect,
               parent,
               {
@@ -585,43 +508,60 @@ export default class Block extends Base {
       const nextRect = new Rect(currRect).offset(nextOffset);
       const evtOptions = generateAttractEventDetail(currAttractSummary, nextRect);
 
+      console.log(currAttractSummary);
       if (!diffTargetX || !diffTargetY) {
         // trigger attractmove of this
-        if (this.triggerMagnetEvent(Block.EVENT.attractmove, evtOptions)) {
+        if (this.triggerMagnetEvent(Block.MAGNET_EVENT.attractmove, evtOptions)) {
           break;
         }
 
         // trigger attractedmove of target x
         if (!diffTargetX && currTargetX instanceof Base) {
-          if (currTargetX.triggerMagnetEvent(Block.EVENT.attractedmove, evtOptions)) {
+          if (currTargetX.triggerMagnetEvent(Block.MAGNET_EVENT.attractedmove, evtOptions)) {
             break;
           }
         }
 
         // trigger attractedmove of target y
         if (!diffTargetY && currTargetY instanceof Base) {
-          if (currTargetY.triggerMagnetEvent(Block.EVENT.attractedmove, evtOptions)) {
+          if (currTargetY.triggerMagnetEvent(Block.MAGNET_EVENT.attractedmove, evtOptions)) {
             break;
           }
         }
       }
 
       // handle unattraction
+      console.log(111, {lastTargetX, diffTargetX, currTargetX});
       if (lastTargetX || lastTargetY) {
         const unattractX = lastTargetX && diffTargetX;
         const unattractY = lastTargetY && diffTargetY;
 
         if (unattractX || unattractY) {
           // trigger unattract of this
-          this.triggerMagnetEvent(Block.EVENT.unattract, evtOptions);
+          if (this.triggerMagnetEvent(Block.MAGNET_EVENT.unattract, evtOptions)) {
+            // cancel all unattract results
+            const emptyAttraction = new Attraction(self, undefined, new Distance());
+
+            currAttractSummary.best.x = emptyAttraction;
+            currAttractSummary.best.y = emptyAttraction.clone();
+            break;
+          }
 
           if (unattractX && lastTargetX instanceof Base) {
             // trigger unattracted of last target x
-            lastTargetX.triggerMagnetEvent(Block.EVENT.unattracted, evtOptions);
+            if (lastTargetX.triggerMagnetEvent(Block.MAGNET_EVENT.unattracted, evtOptions)) {
+              // cancel being unattracted of target x
+              nextOffset.x = 0;
+              currAttractSummary.best.x = new Attraction(self, undefined, new Distance());
+            }
           }
           if (unattractY && lastTargetY instanceof Base) {
             // trigger unattracted of last target y
-            lastTargetY.triggerMagnetEvent(Block.EVENT.unattracted, evtOptions);
+            if (lastTargetY.triggerMagnetEvent(Block.MAGNET_EVENT.unattracted, evtOptions)) {
+              // cancel being unattracted of target y
+              nextOffset.y = 0;
+              currAttractSummary.best.y = new Attraction(self, undefined, new Distance());
+            }
           }
         }
       }
@@ -637,7 +577,8 @@ export default class Block extends Base {
 
         if (currAttractX || currAttractY) {
           // trigger attract of this
-          if (this.triggerMagnetEvent(Block.EVENT.attract, evtOptions)) {
+          if (this.triggerMagnetEvent(Block.MAGNET_EVENT.attract, evtOptions)) {
+            // cancel all attract results
             const emptyAttraction = new Attraction(self, undefined, new Distance());
 
             currAttractSummary.best.x = emptyAttraction;
@@ -647,16 +588,16 @@ export default class Block extends Base {
 
           if (currAttractX && currTargetX instanceof Base) {
             // trigger attracted of target x
-            if (currTargetX.triggerMagnetEvent(Block.EVENT.attracted, evtOptions)) {
-              // cancel being attracted on x-axis of target
+            if (currTargetX.triggerMagnetEvent(Block.MAGNET_EVENT.attracted, evtOptions)) {
+              // cancel being attracted of target x
               nextOffset.x = 0;
               currAttractSummary.best.x = new Attraction(self, undefined, new Distance());
             }
           }
           if (currAttractY && currTargetY instanceof Base) {
             // trigger attracted of target y
-            if (currTargetY.triggerMagnetEvent(Block.EVENT.attracted, evtOptions)) {
-              // cancel being attracted on y-axis of target
+            if (currTargetY.triggerMagnetEvent(Block.MAGNET_EVENT.attracted, evtOptions)) {
+              // cancel being attracted of target y
               nextOffset.y = 0;
               currAttractSummary.best.y = new Attraction(self, undefined, new Distance());
             }
@@ -669,14 +610,195 @@ export default class Block extends Base {
     // eslint-disable-next-line no-constant-condition
     } while (false);
 
-    const finalX = finalRect.x - selfX + lastOffset.x;
-    const finalY = finalRect.y - selfY + lastOffset.y;
+    const finalOffsetX = finalRect.x - selfX + lastOffset.x;
+    const finalOffsetY = finalRect.y - selfY + lastOffset.y;
 
-    this.handleMagnetOffset(finalX, finalY);
+    this.handleMagnetOffset(finalOffsetX, finalOffsetY);
+
+    return currAttractSummary;
+  }
+
+  /**
+   * Move position basing on attraction of (dx, dy)
+   */
+  handleMagnetOffsetWithAttract(
+    dx: number,
+    dy: number,
+    data?: MagnetEventParams,
+  ): CalcMultiAttractionsResult | undefined {
+    const {
+      self: {
+        rectangle: selfRect,
+      } = new Pack(this),
+    } = data || {};
+
+    return this.handleMagnetPositionWithAttract(
+      selfRect.x + dx,
+      selfRect.y + dy,
+      data,
+    );
+  }
+
+  /**
+   * Handler of dragging start
+   */
+  handleMagnetDragStart(evt: Event): void {
+    if (this.mgDisabled || this.mgUnmovable) {
+      // no action if it's disabled/unmovable
+      return;
+    }
+
+    const {
+      position,
+      zIndex,
+      transform,
+    } = getStyle(this);
+    const {
+      mgDisabled: disabled,
+      mgUnattractable: unattractable,
+      mgUnmovable: unmovable,
+      mgGroup: group,
+      mgAlignTo: alignTo,
+      mgAlignToParent: alignToParent,
+      mgCrossPrevent: crossPrevent,
+      mgAttractDistance: attractDistance,
+      parentElement,
+    } = this;
+    const lastOffset = this.getLastMagnetOffset();
+    const self = new Pack(this);
+    const parent = (isnull(parentElement)
+      ? undefined
+      : new Pack(parentElement)
+    );
+    const crossPreventParent = crossPrevent.includes(Block.MAGNET_CROSS_PREVENT.parent);
+    const alignToExtend = alignTo.includes(Block.MAGNET_ALIGN_TO.extend);
+    const attachOptions = {
+      attractDistance,
+      alignToExtend,
+      crossPreventParent,
+      parentPack: parent,
+    };
+    const data: MagnetEventParams = {
+      attractDistance,
+      alignTo,
+      alignToOuter: alignTo.includes(Block.MAGNET_ALIGN_TO.outer),
+      alignToInner: alignTo.includes(Block.MAGNET_ALIGN_TO.inner),
+      alignToCenter: alignTo.includes(Block.MAGNET_ALIGN_TO.center),
+      alignToExtend: alignTo.includes(Block.MAGNET_ALIGN_TO.extend),
+      alignToParent,
+      alignToParentInner: alignToParent.includes(Block.MAGNET_ALIGN_TO_PARENT.inner),
+      alignToParentCenter: alignToParent.includes(Block.MAGNET_ALIGN_TO_PARENT.center),
+      crossPrevent,
+      crossPreventParent,
+      alignments: Block.getMagnetAlignmentsOfAlignTo(alignTo),
+      parentAlignments: Block.getMagnetAlignmentsOfAlignTo(alignToParent),
+      onJudgeDistance: this.judgeMagnetDistance.bind(this),
+      onJudgeAttractSummary: this.judgeMagnetAttractSummary.bind(this),
+      onJudgeParentDistance: this.judgeMagnetParentDistance.bind(this),
+      disabled,
+      group,
+      unattractable,
+      unmovable,
+      parent,
+      targets: this.getMagnetTargets()
+        .map((target) => new Pack(target)),
+      self,
+      originStyle: {
+        position,
+        zIndex,
+        transform,
+      },
+      startXY: getEvtClientXY(evt),
+      lastOffset,
+      attachOptions,
+    };
+
+    if (this.triggerMagnetEvent(
+      Block.MAGNET_EVENT.start,
+      generateDragEventDetail(evt, data),
+    )) {
+      return;
+    }
+
+    dragPassData.set(this, data);
+
+    const onMove = (e: Event): void => {
+      const passData = dragPassData.get(this) as MagnetEventParams;
+
+      if (this.triggerMagnetEvent(
+        Block.MAGNET_EVENT.move,
+        generateDragEventDetail(e, passData),
+      )) {
+        return;
+      }
+
+      dragPassData.set(this, this.handleMagnetDragMove(e, passData));
+    };
+    const onEnd = (e: Event): void => {
+      const passData = dragPassData.get(this) as MagnetEventParams;
+
+      if (this.triggerMagnetEvent(
+        Block.MAGNET_EVENT.end,
+        generateDragEventDetail(e, passData),
+      )) {
+        return;
+      }
+
+      this.handleMagnetDragEnd(e, passData);
+
+      removeEventListener(window, EVENT_DRAGMOVE, onMove);
+      removeEventListener(window, EVENT_DRAGEND, onEnd);
+      dragPassData.delete(this);
+    };
+
+    evt.preventDefault();
+    evt.stopImmediatePropagation();
+
+    // initialize position base
+    switch (position) {
+      case 'relative':
+      case 'fixed':
+      case 'absolute':
+        break;
+
+      default:
+        this.style.setProperty('position', 'relative');
+        break;
+    }
+
+    // move block to top
+    this.style.setProperty('z-index', tostr(toint(Date.now() / 1000)));
+
+    // TODO: combine with original transform?
+    this.style.setProperty('transform', `translate(var(${Styles.offsetX}), var(${Styles.offsetY}))`, 'important');
+
+    addEventListener(window, EVENT_DRAGMOVE, onMove);
+    addEventListener(window, EVENT_DRAGEND, onEnd);
+  }
+
+  /**
+   * Handler of dragging move
+   */
+  handleMagnetDragMove(evt: Event, data: MagnetEventParams): MagnetEventParams {
+    const currXY = getEvtClientXY(evt);
+    const {
+      self: {
+        rectangle: {
+          x: selfX,
+          y: selfY,
+        },
+      },
+      startXY,
+    } = data;
+    const attractSummary = this.handleMagnetPositionWithAttract(
+      currXY.x - startXY.x + selfX,
+      currXY.y - startXY.y + selfY,
+      data,
+    );
 
     return {
       ...data,
-      lastAttractSummary: currAttractSummary,
+      lastAttractSummary: attractSummary,
     };
   }
 

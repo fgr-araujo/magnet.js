@@ -22,6 +22,17 @@ export type RectableObj = Record<string, unknown> & {
   height?: number;
 };
 
+export type RectLike = {
+  x: number;
+  y: number;
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+  height: number;
+};
+
 export default class Rect {
   #top = NaN;
 
@@ -313,5 +324,25 @@ export default class Rect {
       width: this.width,
       height: this.height,
     });
+  }
+
+  /**
+   * Convert to object
+   */
+  toObject(): RectLike {
+    const {
+      top, right, bottom, left, width, height,
+    } = this;
+
+    return {
+      x: left,
+      y: top,
+      top,
+      right,
+      bottom,
+      left,
+      width,
+      height,
+    };
   }
 }

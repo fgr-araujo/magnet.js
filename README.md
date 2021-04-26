@@ -483,13 +483,15 @@ We defined custom events of actions for `<magnet-block>`:
 
 ### Drag Events
 
-Include actions relative to drag:
+Include actions relative to drag.
 
-| Name | Description |
-| :-: | :- |
-| [mg-start][mg-evt-start] | Start dragging |
-| [mg-move][mg-evt-move] | Move on dragging |
-| [mg-end][mg-evt-end] | End of dragging |
+_**Events can be canceled by calling `event.preventDefault()`.**_
+
+| Name | Cancelable | Description |
+| :-: | :-: | :- |
+| [mg-start][mg-evt-start] | yes | Start dragging |
+| [mg-move][mg-evt-move] | yes | Move on dragging |
+| [mg-end][mg-evt-end] | yes | End of dragging |
 
 `event.detail` of drag events:
 
@@ -513,6 +515,10 @@ When end of mouse/touch drag event.
 ```js
 const onMgMove = (evt) => {
   console.log('mg-move', evt.detail);
+
+  if (DONT_WANT_TO_DRAG_MOVE) {
+    evt.preventDefault(); // not to drag move
+  }
 };
 const onMgEnd = ({ target, detail }) => {
   target.removeEventListener('mg-move', onMgMove);
@@ -535,7 +541,7 @@ block.addEventListener('mg-start', ({ target, detail }) => {
 
 Define actions of attracting and being attracted.
 
-_**Some event can be canceled by calling `event.preventDefault()` and the default action would not execute.**_
+_**Some events can be canceled by calling `event.preventDefault()` and the default action would not execute.**_
 
 | Name | Cancelable | Description |
 | :-: | :-: | :- |
@@ -550,7 +556,7 @@ _**Some event can be canceled by calling `event.preventDefault()` and the defaul
 
 | Name | Type | Description |
 | :-: | :-: | :- |
-| attractSummary | [_MultiAttractResult_][mg-type-multiAttractResult] | Summary of attractions |
+| attractSummary | [_Summary_][mg-type-summary] | Summary of attractions |
 | next | [_BlockState_][mg-type-BlockState] | Info of next state |
 
 #### mg-attract
@@ -617,18 +623,27 @@ TODO:
 
 * walled blocks not show attract line when trying to break the wall
 
-* should change handleMagnetDragMove to a handler of judging attraction
-
 * preventDefault on attractmove and attractedmove, should do nothing?
 
 * preventDefault on unattract and unattracted, should keep attach on last target
 
+* it seems not finish easily when closing or refreshing page
+
 
 ## Types
 
+### Point
+
+Represent (x, y) info with following members:
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| x | _number_ | Horizontal value |
+| y | _number_ | Vertical value |
+
 ### Rect
 
-`Rect` is a class describing rectangle info and has the following members:
+Describe rectangle info and has the following members:
 
 _**All values `Rect` are read only. The only values we can change are `(x, y)` by calling `rect.moveTo(newX, newY)` or `rect.offset(diffX, diffY)`.**_
 
@@ -643,6 +658,114 @@ _**All values `Rect` are read only. The only values we can change are `(x, y)` b
 | x | _number_ | Same as `left` |
 | y | _number_ | Same as `top` |
 
+#### Rules of Rect
+
+* `top` = `y` <= `bottom`
+* `left` = `x` <= `right`
+* `width` = `right` - `left` >= 0
+* `height` = `bottom` - `top` >= 0
+
+#### Methods of Rect
+
+##### .offsetX(`x`: _number_)
+
+Offset rectangle with `x`.
+
+##### .offsetY(`y`: _number_)
+
+Offset rectangle with `y`.
+
+##### .offset(`x`: _number_, `y`: _number_)
+
+Offset rectangle with `x` and `y`.
+
+##### .offset(`point`: [_Point_][mg-type-point])
+
+Offset rectangle with `x` and `y` of [`point`][mg-type-point].
+
+##### .moveToX(`x`: _number_)
+
+Move rectangle `x` to new `x`.
+
+##### .moveToY(`y`: _number_)
+
+Move rectangle `y` to new `y`.
+
+##### .moveTo(`x`: _number_, `y`: _number_)
+
+Move rectangle `x` and `y` to new `x` and `y`.
+
+##### .moverTo(`point`: [_Point_][mg-type-point])
+
+Move rectangle `x` and `y` to new `x` and `y` of [`point`][mg-type-point].
+
+### Pack
+
+Include `HTMLElement` with rectangle info:
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| raw | _HTMLElement_ | Element |
+| rect | [_Rect_][mg-type-rect] | Rectangle info of `raw` |
+
+### Distance
+
+Describe distance value with [alignment][mg-type-alignment]:
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| alignment | [_Alignment_][mg-type-alignment] | Alignment of distance |
+| rawVal | _number_ | Distance |
+| absVal | _number_ | Absolute value |
+
+### Alignments
+
+Alignment from `source` to `target`:
+
+| Name | [Align to][mg-attr-align-to] | Description |
+| :-: | :-: | :- |
+| topToTop | _inner_ | Top of source to top of target |
+| topToBottom | _outer_ | Top of source to bottom of target |
+| rightToRight | _inner_ | Right of source to right of target |
+| rightToLeft | _outer_ |Right of source to left of target |
+| bottomToTop | _outer_ | Bottom of source to top of target |
+| bottomToBottom | _inner_ |Bottom of source to bottom of target |
+| leftToRight | _outer_ | Left of source to right of target |
+| leftToLeft | _inner_ | Left of source to Left of target |
+| xCenterToXCenter | _center_ | X center of source to x center of target |
+| yCenterToXCenter | _center_ | Y center of source to y center of target |
+
+### Attraction
+
+A single result of attraction with specific alignment from `source` to `target`:
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| source | [_Pack_][mg-type-pack] | Source attracting others |
+| target | [_Pack_][mg-type-pack] | Target being attracted |
+| distance | [_Distance_][mg-type-distance] | Distance of attraction |
+
+### AttractionResult
+
+Best result of attractions in `x` and `y` axis from `source` to `target`:
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| x | [_Attraction_][mg-type-attraction] | Best attraction result in x-axis. `undefined` if none. |
+| y | [_Attraction_][mg-type-attraction] | Best attraction result in y-axis. `undefined` if none. |
+| any | [_Attraction_][mg-type-attraction] | Best attraction result in both axises. `undefined` if none. |
+
+### Summary
+
+Summarize attraction results from `source` to `target(s)`:
+
+| Name | Type | Description |
+| :-: | :-: | :- |
+| source | [_Pack_][mg-type-pack] | Source attracting others |
+| target | [_Pack_][mg-type-pack] \| [[_Pack_][mg-type-pack]] | Target(s) being attracted |
+| results | [[_Attraction_][mg-type-attraction]] \| [[_Summary_][mg-type-summary]] | `Attraction` for single target; `Summary` for multiple targets |
+| best | [_AttractionResult_][mg-type-attractionresult] | Best result of attractions |
+
 ### BlockState
 
 Define state of `<magnet-block>`:
@@ -653,13 +776,6 @@ Define state of `<magnet-block>`:
 | rectangle | [_Rect_][mg-type-rect] | Rectangle info |
 | attraction | [_Attraction_][mg-type-attraction] | Attraction info |
 
-### Point
-
-### Rect
-
-### Attraction
-
-### MultiAttractResult
 
 
 
@@ -728,126 +844,10 @@ magnet.handle(elem, rect, true); // move the member to the new rectangle positio
 >
 > #### [$magnet.handle(sourceDOM[, sourceRect[, attractable]])](#handlesourcedom-sourcerect-attractable)
 
-### Set Rectangle Position of Member
-
-Directly change the position of member that is faster than `.handle(...)`
-
-#### .setMemberRectangle(sourceDOM[, sourceRect[, useRelativeUnit]])
-
-> _Default `sourceRect` is the [rectangle](#rectangle-object) of `sourceDOM`_
->
-> _Default `useRelativeUnit` is the value of [`.getUseRelativeUnit()`](#use-relative-unit)_
-
-```js
-let { top, right, bottom, left } = elem.getBoundingClientRect();
-
-magnet.setMemberRectangle(elem, rect);
-```
-
-## References
-
-### Magnet Default Values
-
-| _Property_ | _Type_ | _Description_ | _Default_ |
-| :-: | :-: | :- | :-: |
-| **distance** | _Number_ | Distance to attract | `0` |
-| **attractable** | _Boolean_ | Ability to attract | `true` |
-| **allowCtrlKey** | _Boolean_ | Ability to use `ctrl` key to unattract | `true` |
-| **stayInParent** | _Boolean_ | Stay in parent element | `false` |
-| **alignOuter** | _Boolean_ | Align outer edges to that of the others | `true` |
-| **alignInner** | _Boolean_ | Align inner edges to that of the others | `true` |
-| **alignCenter** | _Boolean_ | Align x/y center to that of the others | `true` |
-| **alignParentCenter** | _Boolean_ | Align x/y center to that of parent element | `false` |
-
-### Alignment Properties
-
-| _Value_ | _Description_ |
-| :-: | :- |
-| **topToTop** | Source `top` to target `top` _(inner)_ |
-| **rightToRight** | Source `right` to target `right` _(inner)_ |
-| **bottomToBottom** | Source `bottom` to target `bottom` _(inner)_ |
-| **leftToLeft** | Source `left` to target `left` _(inner)_ |
-| **topToBottom** | Source `top` to target `bottom` _(outer)_ |
-| **bottomToTop** | Source `bottom` to target `top` _(outer)_ |
-| **rightToLeft** | Source `right` to target `left` _(outer)_ |
-| **leftToright** | Source `left` to target `right` _(outer)_ |
-| **xCenter** | Source `x` middle to target `x` middle _(center)_ |
-| **yCenter** | Source `y` middle to target `y` middle _(center)_ |
-
-### Attract Info
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **type** | _String_ | [Alignment property name](#alignments) |
-| **rect** | _Object_ | Rectangle object of element |
-| **element** | _DOM_ | HTML element |
-| **position** | _Number_ | Absolute offset `px` based on window's top/left |
-| **offset** | _Number_ | Offset `px` based on parent element |
-
-### Rectangle Object
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **top** | _Number_ | The same as `y` |
-| **right** | _Number_ | |
-| **bottom** | _Number_ | |
-| **left** | _Number_ | The same as `x` |
-| **width** | _Number_ | The same as `right - left` |
-| **height** | _Number_ | The same as `bottom - top` |
-| **x** | _Number_ | The same as `left` |
-| **y** | _Number_ | The same as `top` |
-
-### Element Object
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **rect** | _Object_ | [Rectangle object](#rectangle-object) |
-| **element** _(optional)_ | _DOM_ | HTML element. `undefined` if the source is a pure rectangle like object |
-
-### Measurement Value Object
-
-> **NOTICE: All the properties inherit from [alignment properties](#alignment-properties)**
-
-| _Value_ | _Type_ |
-| :-: | :-: |
-| **topToTop** _(optional)_ | _Number_ |
-| **rightToRight** _(optional)_ | _Number_ |
-| **bottomToBottom** _(optional)_ | _Number_ |
-| **leftToLeft** _(optional)_ | _Number_ |
-| **topToBottom** _(optional)_ | _Number_ |
-| **bottomToTop** _(optional)_ | _Number_ |
-| **rightToLeft** _(optional)_ | _Number_ |
-| **leftToright** _(optional)_ | _Number_ |
-| **xCenter** _(optional)_ | _Number_ |
-| **yCenter** _(optional)_ | _Number_ |
-
-### Measurement Result Object
-
-| _Property_ | _Type_ | _Description_ |
-| :-: | :-: | :- |
-| **source** | _Object_ | [Element object](#element-object) |
-| **target** | _Object_ | [Element object](#element-object) |
-| **results** | _Object_ | [Measurement value object](#measurement-value-object). The properties follow the input [alignment properties](#alignment-properties) of measurement | **ranking** | _Array_ | Array of [alignment properties](#alignment-properties) sorted from near to far |
-| **min** | _String_ | [Alignment property](#alignment-properties) with minimum distance |
-| **max** | _String_ | [Alignment property](#alignment-properties) with maximum distance |
-
-> **NOTICE: The following properties are DEPRECATED**
->
-> | _Property_ | _Type_ | _Replacement_ |
-> | :-: | :-: | :-: |
-> | topToTop | _Number_ | `results.topToTop` |
-> | topToBottom | _Number_ | `results.topToBottom` |
-> | rightToRight | _Number_ | `results.rightToRight` |
-> | rightToLeft | _Number_ | `results.rightToLeft` |
-> | bottomToTop | _Number_ | `results.bottomToTop` |
-> | bottomToBottom | _Number_ | `results.bottomToBottom` |
-> | xCenter | _Number_ | `results.xCenter` |
-> | yCenter | _Number_ | `results.yCenter` |
 
 ## License
 
 [MIT](/LICENSE) Copyright @ Wan Wan
-
 
 [lastest-build]: https://github.com/lf2com/magnet.js/releases
 [lastest-js]: https://lf2com.github.io/magnet.js/magnet.min.js
@@ -875,8 +875,12 @@ magnet.setMemberRectangle(elem, rect);
 [mg-evt-attracted]: #mg-attracted
 [mg-evt-attractedmove]: #mg-attractedmove
 [mg-evt-unattracted]: #mg-unattracted
-[mg-type-blockState]: #blockState
 [mg-type-point]: #point
 [mg-type-rect]: #rect
+[mg-type-pack]: #pack
+[mg-type-distance]: #distance
+[mg-type-alignment]: #alignments
 [mg-type-attraction]: #attraction
-[mg-type-multiAttractResult]: #multiAttractResult
+[mg-type-attractionresult]: #attractionresult
+[mg-type-blockState]: #blockState
+[mg-type-summary]: #summary

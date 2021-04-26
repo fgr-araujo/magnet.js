@@ -375,9 +375,12 @@ export const calcMultiAttractions: CalcMultiAttractions = function calcMultiAttr
   const summary: CalcMultiAttractionsResult = targets.reduce((currSummary, target) => {
     const tgtPack = new Pack(target);
     const attractSummary = calcAttraction(srcPack, tgtPack, calcAttractionOptions, attachOptions);
-    const { best } = attractSummary;
-    const minXAttraction = best.x;
-    const minYAttraction = best.y;
+    const {
+      best: {
+        x: minXAttraction,
+        y: minYAttraction,
+      },
+    } = attractSummary;
     const minXVal = valGetter(minXAttraction);
     const minYVal = valGetter(minYAttraction);
     const {

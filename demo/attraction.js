@@ -16,12 +16,12 @@ setTimeout(function() {
 
   const blockAttractionObserver = new MutationObserver(checkBlockAttratcion);
   const blockAttractionObserverConfig = {
-    attributeFilter: ['attractdistance'],
+    attributeFilter: ['mg-attract-distance'],
   };
 
   // update attract distance
   function updateBlockAttraction(node) {
-    node.style.setProperty('--attract-distance', node.attractDistance + 'px');
+    node.style.setProperty('--attract-distance', node.mgAttractDistance + 'px');
   }
 
   // watch magnet attraction

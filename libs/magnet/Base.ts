@@ -158,7 +158,7 @@ export default class Base extends HTMLElement {
   /**
    * Available alignments
    */
-  static ALIGNMENT = stdPropValues({
+  static MAGNET_ALIGNMENT = stdPropValues({
     topToTop: Alignments.topToTop,
     topToBottom: Alignments.topToBottom,
     rightToRight: Alignments.rightToRight,
@@ -174,7 +174,7 @@ export default class Base extends HTMLElement {
   /**
    * Available types to sense to align magnets
    */
-  static ALIGN_TO = stdPropValues({
+  static MAGNET_ALIGN_TO = stdPropValues({
     outer: AlignTos.outer,
     inner: AlignTos.inner,
     center: AlignTos.center,
@@ -184,24 +184,26 @@ export default class Base extends HTMLElement {
   /**
    * Get types of alignment of types of align to
    */
-  static getAlignmentsOfAlignTo(alignTo: Array<AlignTos | AlignToParents> = []): Array<Alignments> {
+  static getMagnetAlignmentsOfAlignTo(
+    alignTo: Array<AlignTos | AlignToParents> = [],
+  ): Array<Alignments> {
     const alignments = [];
 
-    if (alignTo.includes(this.ALIGN_TO.outer)) {
-      alignments.push(this.ALIGNMENT.topToBottom);
-      alignments.push(this.ALIGNMENT.rightToLeft);
-      alignments.push(this.ALIGNMENT.bottomToTop);
-      alignments.push(this.ALIGNMENT.leftToRight);
+    if (alignTo.includes(this.MAGNET_ALIGN_TO.outer)) {
+      alignments.push(this.MAGNET_ALIGNMENT.topToBottom);
+      alignments.push(this.MAGNET_ALIGNMENT.rightToLeft);
+      alignments.push(this.MAGNET_ALIGNMENT.bottomToTop);
+      alignments.push(this.MAGNET_ALIGNMENT.leftToRight);
     }
-    if (alignTo.includes(this.ALIGN_TO.inner)) {
-      alignments.push(this.ALIGNMENT.topToTop);
-      alignments.push(this.ALIGNMENT.rightToRight);
-      alignments.push(this.ALIGNMENT.bottomToBottom);
-      alignments.push(this.ALIGNMENT.leftToLeft);
+    if (alignTo.includes(this.MAGNET_ALIGN_TO.inner)) {
+      alignments.push(this.MAGNET_ALIGNMENT.topToTop);
+      alignments.push(this.MAGNET_ALIGNMENT.rightToRight);
+      alignments.push(this.MAGNET_ALIGNMENT.bottomToBottom);
+      alignments.push(this.MAGNET_ALIGNMENT.leftToLeft);
     }
-    if (alignTo.includes(this.ALIGN_TO.center)) {
-      alignments.push(this.ALIGNMENT.xCenterToXCenter);
-      alignments.push(this.ALIGNMENT.yCenterToYCenter);
+    if (alignTo.includes(this.MAGNET_ALIGN_TO.center)) {
+      alignments.push(this.MAGNET_ALIGNMENT.xCenterToXCenter);
+      alignments.push(this.MAGNET_ALIGNMENT.yCenterToYCenter);
     }
 
     return alignments;
@@ -210,7 +212,7 @@ export default class Base extends HTMLElement {
   /**
    * Available types to sense to align parent
    */
-  static ALIGN_TO_PARENT = stdPropValues({
+  static MAGNET_ALIGN_TO_PARENT = stdPropValues({
     inner: AlignToParents.inner,
     center: AlignToParents.center,
   })
@@ -218,14 +220,14 @@ export default class Base extends HTMLElement {
   /**
    * Available types to prevent crossing
    */
-  static CROSS_PREVENT = stdPropValues({
+  static MAGNET_CROSS_PREVENT = stdPropValues({
     parent: CrossPrevents.parent,
   })
 
   /**
    * Available names of event
    */
-  static EVENT = stdPropValues({
+  static MAGNET_EVENT = stdPropValues({
     start: Events.start,
     move: Events.move,
     end: Events.end,
@@ -242,7 +244,7 @@ export default class Base extends HTMLElement {
    *
    * Set to be both unattractable and unmovable
    */
-  set disabled(val: boolean) {
+  set mgDisabled(val: boolean) {
     if (val) {
       this.setAttribute(Attributes.disabled, '');
     } else {
@@ -250,7 +252,7 @@ export default class Base extends HTMLElement {
     }
   }
 
-  get disabled(): boolean {
+  get mgDisabled(): boolean {
     return isstr(this.traceMagnetAttributeValue(Attributes.disabled));
   }
 
@@ -260,7 +262,7 @@ export default class Base extends HTMLElement {
    * Be attractable to magnets with the same group
    * If no group, would be seen as non-group magnets
    */
-  set group(val: string | null) {
+  set mgGroup(val: string | null) {
     if (isstr(val)) {
       this.setAttribute(Attributes.group, val);
     } else {
@@ -268,7 +270,7 @@ export default class Base extends HTMLElement {
     }
   }
 
-  get group(): string | null {
+  get mgGroup(): string | null {
     return this.traceMagnetAttributeValue(Attributes.group);
   }
 
@@ -277,14 +279,14 @@ export default class Base extends HTMLElement {
    *
    * Point to the nearest parent group node if exists
    */
-  get parentGroupNode(): Base | null {
+  get mgParentGroupNode(): Base | null {
     const group = this.getAttribute(Attributes.group);
 
     let parent = this.parentElement;
 
     while (parent) {
       if (parent instanceof Base) {
-        const parentGroup = parent.group;
+        const parentGroup = parent.mgGroup;
 
         if (!isstr(group) || !isstr(parentGroup) || parentGroup === group) {
           return parent;
@@ -302,7 +304,7 @@ export default class Base extends HTMLElement {
    *
    * Set to be no attraction for magnets
    */
-  set unattractable(val: boolean) {
+  set mgUnattractable(val: boolean) {
     if (val) {
       this.setAttribute(Attributes.unattractable, '');
     } else {
@@ -310,7 +312,7 @@ export default class Base extends HTMLElement {
     }
   }
 
-  get unattractable(): boolean {
+  get mgUnattractable(): boolean {
     return isstr(this.traceMagnetAttributeValue(Attributes.unattractable));
   }
 
@@ -319,7 +321,7 @@ export default class Base extends HTMLElement {
    *
    * Set to be unable for dragging
    */
-  set unmovable(val: boolean) {
+  set mgUnmovable(val: boolean) {
     if (val) {
       this.setAttribute(Attributes.unmovable, '');
     } else {
@@ -327,7 +329,7 @@ export default class Base extends HTMLElement {
     }
   }
 
-  get unmovable(): boolean {
+  get mgUnmovable(): boolean {
     return isstr(this.traceMagnetAttributeValue(Attributes.unmovable));
   }
 
@@ -336,13 +338,13 @@ export default class Base extends HTMLElement {
    *
    * Distance to sense magnets
    */
-  set attractDistance(val: number) {
+  set mgAttractDistance(val: number) {
     if (isnum(val)) {
       this.setAttribute(Attributes.attractDistance, tostr(val));
     }
   }
 
-  get attractDistance(): number {
+  get mgAttractDistance(): number {
     const val = this.traceMagnetAttributeValue(Attributes.attractDistance);
     const result = tonum(isstr(val) ? val : DEF_ATTRACT_DISTANCE);
 
@@ -352,46 +354,50 @@ export default class Base extends HTMLElement {
   /**
    * Types for sensing to align magnets
    */
-  set alignTo(val: Array<AlignTos>) {
-    const attrVal = stdMultiValToAttrVal<AlignTos>(val, Base.ALIGN_TO);
+  set mgAlignTo(val: Array<AlignTos>) {
+    const attrVal = stdMultiValToAttrVal<AlignTos>(val, Base.MAGNET_ALIGN_TO);
 
     this.setAttribute(Attributes.alignTo, attrVal);
   }
 
-  get alignTo(): Array<AlignTos> {
+  get mgAlignTo(): Array<AlignTos> {
     const val = this.traceMagnetAttributeValue(Attributes.alignTo);
 
-    return stdAttrValToMultiVal<AlignTos>(val, Base.ALIGN_TO, DEF_ALIGN_TO);
+    return stdAttrValToMultiVal<AlignTos>(val, Base.MAGNET_ALIGN_TO, DEF_ALIGN_TO);
   }
 
   /**
    * Types for sensing to align parent
    */
-  set alignToParent(val: Array<AlignToParents>) {
-    const attrVal = stdMultiValToAttrVal<AlignToParents>(val, Base.ALIGN_TO_PARENT);
+  set mgAlignToParent(val: Array<AlignToParents>) {
+    const attrVal = stdMultiValToAttrVal<AlignToParents>(val, Base.MAGNET_ALIGN_TO_PARENT);
 
     this.setAttribute(Attributes.alignToParent, attrVal);
   }
 
-  get alignToParent(): Array<AlignToParents> {
+  get mgAlignToParent(): Array<AlignToParents> {
     const val = this.traceMagnetAttributeValue(Attributes.alignToParent);
 
-    return stdAttrValToMultiVal<AlignToParents>(val, Base.ALIGN_TO_PARENT, DEF_ALIGN_TO_PARENT);
+    return stdAttrValToMultiVal<AlignToParents>(
+      val,
+      Base.MAGNET_ALIGN_TO_PARENT,
+      DEF_ALIGN_TO_PARENT,
+    );
   }
 
   /**
    * Types to prevent crossing
    */
-  set crossPrevent(val: Array<CrossPrevents>) {
-    const attrVal = stdMultiValToAttrVal<CrossPrevents>(val, Base.CROSS_PREVENT);
+  set mgCrossPrevent(val: Array<CrossPrevents>) {
+    const attrVal = stdMultiValToAttrVal<CrossPrevents>(val, Base.MAGNET_CROSS_PREVENT);
 
     this.setAttribute(Attributes.crossPrevent, attrVal);
   }
 
-  get crossPrevent(): Array<CrossPrevents> {
+  get mgCrossPrevent(): Array<CrossPrevents> {
     const val = this.traceMagnetAttributeValue(Attributes.crossPrevent);
 
-    return stdAttrValToMultiVal<CrossPrevents>(val, Base.CROSS_PREVENT, DEF_CROSS_PREVENT);
+    return stdAttrValToMultiVal<CrossPrevents>(val, Base.MAGNET_CROSS_PREVENT, DEF_CROSS_PREVENT);
   }
 
   /**
@@ -406,7 +412,9 @@ export default class Base extends HTMLElement {
       return val;
     }
 
-    const { parentGroupNode } = this;
+    const {
+      mgParentGroupNode: parentGroupNode,
+    } = this;
 
     return (parentGroupNode
       ? parentGroupNode.traceMagnetAttributeValue(attrName)

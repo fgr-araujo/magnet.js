@@ -12,16 +12,14 @@ export class Pack {
 
   #raw: RectableSource;
 
-  constructor(src: RectableSource, clone = false) {
+  constructor(src: RectableSource, rect: RectableSource = src) {
     if (Pack.isPack(src)) {
-      const { rectangle } = src;
-
-      this.#rect = clone ? rectangle.clone() : rectangle;
       this.#raw = src.raw;
     } else {
-      this.#rect = toRect(src);
       this.#raw = src;
     }
+
+    this.#rect = Rect.isRect(rect) ? rect : toRect(rect);
   }
 
   /**
@@ -39,7 +37,7 @@ export class Pack {
    * Clone
    */
   clone(): Pack {
-    return new Pack(this, true);
+    return new Pack(this);
   }
 }
 

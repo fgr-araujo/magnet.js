@@ -1,5 +1,5 @@
 import Block from './Block';
-import Point from '../Rect/Point';
+import Point, { PointLike } from '../Rect/Point';
 import { isarray } from '../stdlib';
 import Base, {
   Alignments, AlignToParents, AlignTos, CrossPrevents,
@@ -9,7 +9,7 @@ import {
   OnJudgeAttractSummary, OnJudgeDistance, OnJudgeOptions,
 } from './calc';
 import { Pack } from '../Rect';
-import Rect from '../Rect/Rect';
+import Rect, { RectLike } from '../Rect/Rect';
 import AttractResult from './calc/AttractResult';
 
 /**
@@ -50,8 +50,8 @@ export type MagnetEventParams = {
  * Drag event detail
  */
 export type BlockState = {
-  offset: Point;
-  rectangle: Rect;
+  offset: PointLike;
+  rectangle: RectLike;
   attraction?: AttractResult;
 };
 export type DragEventDetail = {
@@ -63,15 +63,21 @@ export type DragEventDetail = {
 
 export function generateDragEventDetail(
   originEvent: Event,
-  data: MagnetEventParams,
+  {
+    lastOffset,
+    self: {
+      rectangle: selfRect,
+    },
+    lastAttractSummary,
+  }: MagnetEventParams,
 ): DragEventDetail {
   return {
     detail: {
       originEvent,
       last: {
-        offset: data.lastOffset.clone(),
-        rectangle: data.self.rectangle.clone(),
-        attraction: data.lastAttractSummary?.best.clone(),
+        offset: lastOffset.toObject(),
+        rectangle: selfRect.toObject(),
+        attraction: lastAttractSummary?.best.clone(),
       },
     },
   };
@@ -95,7 +101,7 @@ export function generateAttractEventDetail(
       attractSummary: cloneMultiAttractionsResult(attractSummary),
       next: {
         offset: new Point(nextRect),
-        rectangle: nextRect.clone(),
+        rectangle: nextRect.toObject(),
         attraction: attractSummary.best.clone(),
       },
     },

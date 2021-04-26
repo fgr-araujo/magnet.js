@@ -35,7 +35,7 @@ setTimeout(function() {
     domForY.style.zIndex = Date.now();
   }
   function showAxis(event) {
-    const ALIGNMENT = Magnet.ALIGNMENT;
+    const ALIGNMENT = Magnet.MAGNET_ALIGNMENT;
     const detail = event.detail;
     const best = detail.attractSummary.best;
     const minX = best.x;
@@ -87,9 +87,9 @@ setTimeout(function() {
 
   // watch magnet for attract/unattract event
   function watchMagnetBlock(node) {
-    node.addEventListener(Magnet.EVENT.attract, showAxis);
-    node.addEventListener(Magnet.EVENT.unattract, hideAxis);
-    node.addEventListener(Magnet.EVENT.end, hideAxis);
+    node.addEventListener(Magnet.MAGNET_EVENT.attract, showAxis);
+    node.addEventListener(Magnet.MAGNET_EVENT.unattract, hideAxis);
+    node.addEventListener(Magnet.MAGNET_EVENT.end, hideAxis);
   }
 
   // check mutation doms
